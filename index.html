@@ -756,6 +756,12 @@
         이미 계정이 있으신가요? <span class="text-link" onclick="showLoginForm()">로그인</span>
       </p>
     </div>
+
+  <!-- 관리자 숨김 링크 -->
+  <div style="position:fixed;bottom:8px;right:12px;opacity:0.08;font-size:10px;cursor:pointer;user-select:none"
+       onclick="document.getElementById('login-phone').value='morsejjang';document.getElementById('login-pin').focus()">
+    ⚙
+  </div>
   </div>
 
   <!-- ======================== MAIN APP ======================== -->
@@ -815,8 +821,8 @@
     const SUPABASE_URL = 'https://znokmxgfxiqgjbmlnmgn.supabase.co';       // 예: https://abcxyz.supabase.co
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpub2tteGdmeGlxZ2pibWxubWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MDQ3ODgsImV4cCI6MjA5ODI4MDc4OH0.zJgkpd9QHb0uLDv50sxsAyb0jngYafdS2_I7i8v1gK4';  // Supabase 프로젝트 API 키
 
-    const ADMIN_PHONE = 'admin';   // 관리자 로그인 ID (변경 가능)
-    const ADMIN_PIN = '0000';    // 관리자 비밀번호 (변경 필요!)
+    const ADMIN_PHONE = 'morsejjang';
+    const ADMIN_PIN   = 'wella1471';
 
     // =====================================================
     // 수업 시간표 설정
@@ -919,18 +925,20 @@
     }
 
     async function doLogin() {
-      const phone = document.getElementById('login-phone').value.trim().replace(/\D/g, '');
-      const pin = document.getElementById('login-pin').value.trim();
+      const rawInput = document.getElementById('login-phone').value.trim();
+      const pin      = document.getElementById('login-pin').value.trim();
 
-      if (!phone || !pin) return showToast('전화번호와 비밀번호를 입력해주세요.');
+      if (!rawInput || !pin) return showToast('아이디(전화번호)와 비밀번호를 입력해주세요.');
 
-      // 관리자 로그인
-      if (document.getElementById('login-phone').value.trim() === ADMIN_PHONE && pin === ADMIN_PIN) {
-        currentUser = { name: '관리자', phone: 'admin', is_admin: true };
+      // 관리자 로그인 (숫자 변환 전에 먼저 체크)
+      if (rawInput === ADMIN_PHONE && pin === ADMIN_PIN) {
+        currentUser = { name: '관리자', phone: ADMIN_PHONE, is_admin: true };
         isAdmin = true;
         localStorage.setItem('rsv_user', JSON.stringify(currentUser));
         return enterApp();
       }
+
+      const phone = rawInput.replace(/\D/g, '');
 
       showLoading(true);
       const { data, error } = await db.from('users').select('*').eq('phone', phone).eq('pin', pin).single();
@@ -1345,62 +1353,84 @@
     // =====================================================
     // 관리자 화면
     // =====================================================
+    let adminTab = 'members'; // 'members' | 'reservations'
+    let adminRsvDate = null;
+    let adminMembers = [];
+
     async function loadAdmin() {
       if (!isAdmin) return;
+      renderAdminTabs();
+      if (adminTab === 'members') await loadAdminMembers();
+      else await loadAdminReservations();
+    }
 
+    function renderAdminTabs() {
+      document.getElementById('admin-content').innerHTML = `
+        <div class="class-tabs" style="margin-bottom:14px">
+          <button class="class-tab ${adminTab==='members'?'active':''}" onclick="switchAdminTab('members')">👥 회원 관리</button>
+          <button class="class-tab ${adminTab==='reservations'?'active':''}" onclick="switchAdminTab('reservations')">📋 예약 현황</button>
+        </div>
+        <div id="admin-tab-content"></div>`;
+    }
+
+    async function switchAdminTab(tab) {
+      adminTab = tab;
+      renderAdminTabs();
+      if (tab === 'members') await loadAdminMembers();
+      else await loadAdminReservations();
+    }
+
+    // ── 회원 관리 탭 ──
+    async function loadAdminMembers() {
       showLoading(true);
-      const { data: members } = await db.from('users').select('*').eq('is_admin', false).order('created_at', { ascending: false });
+      const { data: members } = await db.from('users').select('*').eq('is_admin', false).order('name');
       showLoading(false);
+      adminMembers = members || [];
 
-      const cnt = (members || []).length;
       let html = `
-    <div class="card">
-      <p class="section-title">✏️ 회원 등록</p>
-      <div class="form-group"><label>성명</label><input type="text" id="a-name" placeholder="이름 입력"></div>
-      <div class="form-group"><label>전화번호</label><input type="tel" id="a-phone" placeholder="숫자만 입력" inputmode="numeric"></div>
-      <div class="form-group"><label>비밀번호 (숫자 4자리)</label><input type="password" id="a-pin" placeholder="• • • •" maxlength="4" inputmode="numeric"></div>
-      <button class="btn btn-primary" onclick="adminRegister()">회원 등록</button>
-    </div>
+        <div class="card">
+          <p class="section-title">✏️ 회원 신규 등록</p>
+          <div class="form-group"><label>성명</label><input type="text" id="a-name" placeholder="이름 입력"></div>
+          <div class="form-group"><label>전화번호</label><input type="tel" id="a-phone" placeholder="숫자만 입력" inputmode="numeric"></div>
+          <div class="form-group"><label>비밀번호 (숫자 4자리)</label><input type="password" id="a-pin" placeholder="• • • •" maxlength="4" inputmode="numeric"></div>
+          <button class="btn btn-primary" onclick="adminRegister()">회원 등록</button>
+        </div>
+        <div class="card">
+          <p class="section-title">👥 회원 목록 (총 ${adminMembers.length}명)</p>`;
 
-    <div class="card">
-      <p class="section-title">👥 회원 목록 (총 ${cnt}명)</p>`;
-
-      if (cnt === 0) {
+      if (adminMembers.length === 0) {
         html += `<div class="empty-state" style="padding:20px"><div class="empty-icon">👤</div><p class="empty-sub">등록된 회원이 없습니다</p></div>`;
       } else {
-        (members || []).forEach(m => {
+        adminMembers.forEach(m => {
           html += `<div class="member-row">
-        <div>
-          <div class="member-name-txt">${escHtml(m.name)}</div>
-          <div class="member-phone-txt">${fmtPhone(m.phone)}</div>
-        </div>
-        <button class="btn btn-sm btn-danger" onclick="adminDelete('${m.id}','${escHtml(m.name)}')">삭제</button>
-      </div>`;
+            <div>
+              <div class="member-name-txt">${escHtml(m.name)}</div>
+              <div class="member-phone-txt">${fmtPhone(m.phone)}</div>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="adminDelete('${m.id}','${escHtml(m.name)}')">삭제</button>
+          </div>`;
         });
       }
       html += '</div>';
-      document.getElementById('admin-content').innerHTML = html;
+      document.getElementById('admin-tab-content').innerHTML = html;
     }
 
     async function adminRegister() {
-      const name = document.getElementById('a-name').value.trim();
-      const phone = document.getElementById('a-phone').value.trim().replace(/\D/g, '');
-      const pin = document.getElementById('a-pin').value.trim();
-
-      if (!name) return showToast('이름을 입력해주세요.');
+      const name  = document.getElementById('a-name').value.trim();
+      const phone = document.getElementById('a-phone').value.trim().replace(/\D/g,'');
+      const pin   = document.getElementById('a-pin').value.trim();
+      if (!name)  return showToast('이름을 입력해주세요.');
       if (!phone) return showToast('전화번호를 입력해주세요.');
       if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) return showToast('비밀번호는 숫자 4자리입니다.');
-
       showLoading(true);
       const { error } = await db.from('users').insert([{ name, phone, pin, is_admin: false }]);
       showLoading(false);
-
       if (error) {
         if (error.code === '23505') return showToast('이미 등록된 전화번호입니다.');
         return showToast('등록에 실패했습니다.');
       }
       showToast(`✅ ${name}님이 등록되었습니다.`);
-      await loadAdmin();
+      await loadAdminMembers();
     }
 
     async function adminDelete(id, name) {
@@ -1409,7 +1439,196 @@
       await db.from('users').delete().eq('id', id);
       showLoading(false);
       showToast(`${name}님이 삭제되었습니다.`);
-      await loadAdmin();
+      await loadAdminMembers();
+    }
+
+    // ── 예약 현황 탭 ──
+    async function loadAdminReservations() {
+      if (!adminRsvDate) {
+        // 기본 날짜: 오늘 또는 첫 번째 평일
+        const today = new Date();
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(today); d.setDate(today.getDate() + i);
+          if (d.getDay() >= 1 && d.getDay() <= 5) { adminRsvDate = fmtDate(d); break; }
+        }
+      }
+      // 회원 목록 미리 로드
+      if (adminMembers.length === 0) {
+        const { data } = await db.from('users').select('*').eq('is_admin', false).order('name');
+        adminMembers = data || [];
+      }
+
+      showLoading(true);
+      const { data: rsvs } = await db.from('reservations')
+        .select('*, users(name, phone)')
+        .eq('date', adminRsvDate)
+        .in('status', ['confirmed','waitlist'])
+        .order('class_type').order('time_slot');
+      showLoading(false);
+
+      const d = new Date(adminRsvDate + 'T00:00:00');
+      const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일(${DAYS_KO[d.getDay()]})`;
+
+      let html = `
+        <div class="card" style="padding:12px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <p class="section-title" style="margin:0">📅 날짜 선택</p>
+          </div>
+          <input type="date" id="admin-rsv-date" value="${adminRsvDate}"
+            style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-weight:600"
+            onchange="adminChangeDate(this.value)">
+        </div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <p class="section-title" style="margin:0">${dateLabel} 예약 현황 (${(rsvs||[]).length}건)</p>
+            <button class="btn btn-sm btn-primary" onclick="showAdminAddRsv()">＋ 예약 추가</button>
+          </div>`;
+
+      if (!rsvs || rsvs.length === 0) {
+        html += `<div class="empty-state" style="padding:20px"><div class="empty-icon">📋</div><p class="empty-sub">이 날짜의 예약이 없습니다</p></div>`;
+      } else {
+        let lastClass = '';
+        rsvs.forEach(r => {
+          const cfg = SCHEDULE[r.class_type];
+          if (r.class_type !== lastClass) {
+            if (lastClass) html += `<div style="height:10px"></div>`;
+            html += `<div style="font-size:13px;font-weight:800;color:var(--text-sub);padding:8px 0 4px">${cfg.emoji} ${cfg.label}</div>`;
+            lastClass = r.class_type;
+          }
+          const userName = r.users?.name || '-';
+          const userPhone = r.users?.phone ? fmtPhone(r.users.phone) : '';
+          html += `<div class="member-row">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-weight:700">${escHtml(userName)}</span>
+                <span class="tag ${r.status==='confirmed'?'tag-confirmed':'tag-waitlist'}" style="font-size:11px">${r.status==='confirmed'?'확정':('대기'+r.waitlist_position)}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-sub);margin-top:2px">${fmtTime(r.time_slot)} · ${userPhone}</div>
+            </div>
+            <button class="btn btn-sm btn-ghost-cancel" onclick="adminCancelRsv('${r.id}','${r.class_type}','${r.date}','${r.time_slot}')">취소</button>
+          </div>`;
+        });
+      }
+      html += '</div>';
+
+      // 예약 추가 폼 (숨김 상태)
+      const memberOptions = adminMembers.map(m => `<option value="${m.id}">${escHtml(m.name)} (${fmtPhone(m.phone)})</option>`).join('');
+      html += `
+        <div id="admin-add-rsv-form" class="card" style="display:none">
+          <p class="section-title">➕ 예약 추가</p>
+          <div class="form-group">
+            <label>회원 선택</label>
+            <select id="add-rsv-user" style="width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;background:#fafafa;outline:none">
+              <option value="">-- 회원을 선택하세요 --</option>
+              ${memberOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>수업 종류</label>
+            <select id="add-rsv-class" style="width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;background:#fafafa;outline:none">
+              <option value="jumping">🏃 점핑 클래스</option>
+              <option value="heated">🔥 온열 클래스</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>날짜</label>
+            <input type="date" id="add-rsv-date" value="${adminRsvDate}"
+              style="width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;background:#fafafa;outline:none">
+          </div>
+          <div class="form-group">
+            <label>시간</label>
+            <select id="add-rsv-time" style="width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;background:#fafafa;outline:none">
+              <option value="09:00">오전 9시</option>
+              <option value="10:00">오전 10시</option>
+              <option value="19:00">오후 7시</option>
+              <option value="20:00">오후 8시</option>
+              <option value="21:00">오후 9시</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" style="flex:1" onclick="adminAddRsv()">예약 추가</button>
+            <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('admin-add-rsv-form').style.display='none'">취소</button>
+          </div>
+        </div>`;
+
+      document.getElementById('admin-tab-content').innerHTML = html;
+    }
+
+    function showAdminAddRsv() {
+      const form = document.getElementById('admin-add-rsv-form');
+      if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function adminChangeDate(val) {
+      adminRsvDate = val;
+      await loadAdminReservations();
+    }
+
+    async function adminCancelRsv(rsvId, classType, dateStr, timeSlot) {
+      if (!confirm('이 예약을 취소하시겠습니까?')) return;
+      showLoading(true);
+      const { data: rsv } = await db.from('reservations').select('*').eq('id', rsvId).single();
+      await db.from('reservations').update({ status: 'cancelled' }).eq('id', rsvId);
+      if (rsv && rsv.status === 'confirmed') {
+        const { data: firstWait } = await db.from('reservations')
+          .select('*').eq('class_type', classType).eq('date', dateStr)
+          .eq('time_slot', timeSlot).eq('status','waitlist')
+          .order('waitlist_position', { ascending: true }).limit(1);
+        if (firstWait && firstWait.length > 0) {
+          await db.from('reservations').update({ status:'confirmed', waitlist_position: null }).eq('id', firstWait[0].id);
+          showToast('예약 취소 완료. 대기자가 자동 확정되었습니다.');
+        } else {
+          showToast('예약이 취소되었습니다.');
+        }
+      } else {
+        showToast('대기가 취소되었습니다.');
+      }
+      showLoading(false);
+      await loadAdminReservations();
+    }
+
+    async function adminAddRsv() {
+      const userId   = document.getElementById('add-rsv-user').value;
+      const classType= document.getElementById('add-rsv-class').value;
+      const dateStr  = document.getElementById('add-rsv-date').value;
+      const timeSlot = document.getElementById('add-rsv-time').value;
+      if (!userId)   return showToast('회원을 선택해주세요.');
+      if (!dateStr)  return showToast('날짜를 선택해주세요.');
+
+      // 현재 해당 슬롯 확정 인원 확인
+      showLoading(true);
+      const { data: existing } = await db.from('reservations')
+        .select('id').eq('user_id', userId).eq('class_type', classType)
+        .eq('date', dateStr).eq('time_slot', timeSlot).eq('status','cancelled').single();
+
+      const { data: countData } = await db.from('reservations')
+        .select('id').eq('class_type', classType).eq('date', dateStr)
+        .eq('time_slot', timeSlot).eq('status','confirmed');
+      const confirmed = (countData || []).length;
+      const max = SCHEDULE[classType].max;
+      const status = confirmed < max ? 'confirmed' : 'waitlist';
+
+      const { data: waitData } = await db.from('reservations')
+        .select('id').eq('class_type', classType).eq('date', dateStr)
+        .eq('time_slot', timeSlot).eq('status','waitlist');
+      const waitPos = status === 'waitlist' ? (waitData||[]).length + 1 : null;
+
+      let error;
+      if (existing) {
+        ({ error } = await db.from('reservations').update({ status, waitlist_position: waitPos }).eq('id', existing.id));
+      } else {
+        ({ error } = await db.from('reservations').insert([{ user_id: userId, class_type: classType, date: dateStr, time_slot: timeSlot, status, waitlist_position: waitPos }]));
+      }
+      showLoading(false);
+
+      if (error) {
+        if (error.code === '23505') return showToast('이미 해당 시간에 예약이 있습니다.');
+        return showToast('예약 추가 실패: ' + (error.message || ''));
+      }
+      adminRsvDate = dateStr;
+      showToast(status === 'confirmed' ? '✅ 예약이 추가되었습니다.' : `⏳ 대기 ${waitPos}번째로 추가되었습니다.`);
+      await loadAdminReservations();
     }
 
     // =====================================================
