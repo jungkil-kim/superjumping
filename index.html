@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>클래스 예약</title>
+  <style>
+    :root {
+      --primary: #3D8B5E;
+      --primary-light: #E8F5EE;
+      --primary-dark: #2D6B48;
+      --orange: #E8622A;
+      --orange-light: #FEF0E9;
+      --bg: #F2F4F2;
+      --card: #FFFFFF;
+      --text: #1A1A1A;
+      --text-sub: #666666;
+      --border: #E5E5E5;
+      --success: #3D8B5E;
+      --warning: #E08B2C;
+      --danger: #D93025;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100%;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========== LOADING ========== */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ========== TOAST ========== */
+    #toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(20, 20, 20, 0.9);
+      color: #fff;
+      padding: 11px 22px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 5000;
+      white-space: nowrap;
+      max-width: 88%;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========== AUTH SCREEN ========== */
+    #auth-screen {
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px 24px 40px;
+      background: #fff;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .auth-logo .logo-icon {
+      font-size: 52px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .auth-logo h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .auth-logo p {
+      color: var(--text-sub);
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    /* ========== FORMS ========== */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 7px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 15px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 16px;
+      background: #FAFAFA;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .form-group input:focus {
+      border-color: var(--primary);
+      background: #fff;
+    }
+
+    /* ========== BUTTONS ========== */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      text-align: center;
+      letter-spacing: -0.2px;
+    }
+
+    .btn:active {
+      transform: scale(0.975);
+      opacity: 0.85;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 7px 14px;
+      font-size: 13px;
+      border-radius: 10px;
+    }
+
+    .btn-ghost-cancel {
+      background: #FEE8E6;
+      color: var(--danger);
+    }
+
+    .btn-ghost-wait {
+      background: #FEF3E0;
+      color: var(--warning);
+    }
+
+    /* ========== DIVIDER ========== */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-link {
+      color: var(--primary);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ========== MAIN APP ========== */
+    #main-app {
+      display: none;
+    }
+
+    /* ========== HEADER ========== */
+    .header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 18px;
+      padding-top: max(14px, env(safe-area-inset-top, 14px));
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-user {
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .btn-logout {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      padding: 6px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ========== BOTTOM NAV ========== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      z-index: 100;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 0;
+      border: none;
+      background: none;
+      color: #AAAAAA;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.15s;
+      gap: 3px;
+    }
+
+    .nav-btn.active {
+      color: var(--primary);
+    }
+
+    .nav-icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    /* ========== SCREENS ========== */
+    .screen {
+      display: none;
+      padding: 16px 16px 90px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* ========== CARDS ========== */
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+      letter-spacing: -0.3px;
+    }
+
+    /* ========== CLASS TABS ========== */
+    .class-tabs {
+      display: flex;
+      background: #fff;
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .class-tab {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: 11px;
+      background: none;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text-sub);
+      transition: all 0.2s;
+      letter-spacing: -0.2px;
+    }
+
+    .class-tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* ========== DATE SCROLL ========== */
+    .date-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 14px;
+      scrollbar-width: none;
+    }
+
+    .date-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .date-item {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px;
+      min-width: 54px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .date-item.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .date-day-label {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.75;
+    }
+
+    .date-num {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .date-today-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--primary);
+      margin-top: 3px;
+    }
+
+    .date-item.active .date-today-dot {
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    /* ========== SLOT CARDS ========== */
+    .slot-item {
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .slot-item.status-available {
+      border-color: var(--primary);
+    }
+
+    .slot-item.status-full {
+      opacity: 0.65;
+    }
+
+    .slot-item.status-my-confirmed {
+      background: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    .slot-item.status-my-waitlist {
+      background: #FEF3E0;
+      border-color: var(--warning);
+    }
+
+    .slot-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .slot-time {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .slot-count {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-top: 3px;
+    }
+
+    .slot-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-available {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .badge-full {
+      background: #FFE8E6;
+      color: var(--danger);
+    }
+
+    .badge-waitlist {
+      background: #FEF3E0;
+      color: var(--warning);
+    }
+
+    .badge-confirmed {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .badge-my-wait {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    .slot-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ========== MY RESERVATIONS ========== */
+    .my-rsv-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .my-rsv-class {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .my-rsv-date {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .my-rsv-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    /* ========== TAGS ========== */
+    .tag {
+      display: inline-block;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag-confirmed {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .tag-waitlist {
+      background: #FEF3E0;
+      color: var(--warning);
+    }
+
+    /* ========== ADMIN ========== */
+    .member-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .member-row:last-child {
+      border-bottom: none;
+    }
+
+    .member-name-txt {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .member-phone-txt {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    /* ========== HOME OVERVIEW ========== */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .overview-slot {
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--bg);
+      text-align: center;
+    }
+
+    .overview-time {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .overview-count {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 3px;
+    }
+
+    .overview-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .overview-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--primary);
+      transition: width 0.4s;
+    }
+
+    .overview-bar-fill.full {
+      background: var(--danger);
+    }
+
+    /* ========== EMPTY STATE ========== */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+    }
+
+    .empty-icon {
+      font-size: 44px;
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .empty-sub {
+      font-size: 14px;
+      color: var(--text-sub);
+      margin-top: 6px;
+    }
+
+    /* ========== WEEKEND BANNER ========== */
+    .weekend-banner {
+      background: linear-gradient(135deg, #E8F5EE 0%, #D1EAD9 100%);
+      border-radius: 18px;
+      padding: 28px 20px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .weekend-banner .icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .weekend-banner h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .weekend-banner p {
+      font-size: 14px;
+      color: var(--primary);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- ======================== AUTH SCREEN ======================== -->
+  <div id="auth-screen">
+    <div class="auth-logo">
+      <div class="logo-icon">🏋️</div>
+      <h1>클래스 예약</h1>
+      <p>점핑 &amp; 온열 수업 예약 시스템</p>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>전화번호</label>
+        <input type="tel" id="login-phone" placeholder="전화번호 입력 (숫자만)" inputmode="numeric" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label>비밀번호 (숫자 4자리)</label>
+        <input type="password" id="login-pin" placeholder="• • • •" maxlength="4" inputmode="numeric"
+          autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">로그인</button>
+      <div class="divider"></div>
+      <p class="text-center" style="font-size:14px;color:var(--text-sub)">
+        처음 방문하시나요? <span class="text-link" onclick="showRegisterForm()">회원가입</span>
+      </p>
+    </div>
+
+    <!-- 회원가입 폼 -->
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label>성명</label>
+        <input type="text" id="reg-name" placeholder="이름 입력" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>전화번호</label>
+        <input type="tel" id="reg-phone" placeholder="전화번호 입력 (숫자만)" inputmode="numeric" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label>비밀번호 (숫자 4자리)</label>
+        <input type="password" id="reg-pin" placeholder="• • • •" maxlength="4" inputmode="numeric"
+          autocomplete="new-password">
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">회원가입</button>
+      <div class="divider"></div>
+      <p class="text-center" style="font-size:14px;color:var(--text-sub)">
+        이미 계정이 있으신가요? <span class="text-link" onclick="showLoginForm()">로그인</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ======================== MAIN APP ======================== -->
+  <div id="main-app">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">🏋️ 클래스 예약</div>
+      <div class="header-right">
+        <span class="header-user" id="header-username"></span>
+        <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+      </div>
+    </div>
+
+    <!-- ── 홈 스크린 ── -->
+    <div id="screen-home" class="screen active">
+      <div id="home-content"></div>
+    </div>
+
+    <!-- ── 예약하기 스크린 ── -->
+    <div id="screen-reserve" class="screen">
+      <div id="reserve-tabs" class="class-tabs"></div>
+      <div id="reserve-date-scroll" class="date-scroll"></div>
+      <div id="reserve-slots"></div>
+    </div>
+
+    <!-- ── 내 예약 스크린 ── -->
+    <div id="screen-my" class="screen">
+      <div id="my-content"></div>
+    </div>
+
+    <!-- ── 관리자 스크린 ── -->
+    <div id="screen-admin" class="screen">
+      <div id="admin-content"></div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" id="nav-home" onclick="navigateTo('home')">
+        <span class="nav-icon">🏠</span><span>홈</span>
+      </button>
+      <button class="nav-btn" id="nav-reserve" onclick="navigateTo('reserve')">
+        <span class="nav-icon">📅</span><span>예약</span>
+      </button>
+      <button class="nav-btn" id="nav-my" onclick="navigateTo('my')">
+        <span class="nav-icon">📋</span><span>내 예약</span>
+      </button>
+      <button class="nav-btn" id="nav-admin" onclick="navigateTo('admin')" style="display:none">
+        <span class="nav-icon">⚙️</span><span>관리자</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // =====================================================
+    // ★ 필수 설정 - Supabase 정보를 여기에 입력하세요! ★
+    // =====================================================
+    const SUPABASE_URL = 'https://znokmxgfxiqgjbmlnmgn.supabase.co';       // 예: https://abcxyz.supabase.co
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpub2tteGdmeGlxZ2pibWxubWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MDQ3ODgsImV4cCI6MjA5ODI4MDc4OH0.zJgkpd9QHb0uLDv50sxsAyb0jngYafdS2_I7i8v1gK4';  // Supabase 프로젝트 API 키
+
+    const ADMIN_PHONE = 'admin';   // 관리자 로그인 ID (변경 가능)
+    const ADMIN_PIN = '0000';    // 관리자 비밀번호 (변경 필요!)
+
+    // =====================================================
+    // 수업 시간표 설정
+    // =====================================================
+    const SCHEDULE = {
+      jumping: {
+        label: '점핑 클래스', emoji: '🏃',
+        max: 10,
+        slots: {
+          1: ['09:00', '10:00', '19:00', '20:00', '21:00'], // 월
+          2: ['09:00', '10:00', '19:00', '20:00'],          // 화
+          3: ['09:00', '10:00', '19:00', '20:00', '21:00'], // 수
+          4: ['09:00', '10:00', '19:00', '20:00'],          // 목
+          5: ['09:00', '10:00', '19:00', '20:00'],          // 금
+        }
+      },
+      heated: {
+        label: '온열 클래스', emoji: '🔥',
+        max: 2,
+        slots: {
+          1: ['09:00', '10:00', '19:00', '20:00'],
+          2: ['09:00', '10:00', '19:00', '20:00'],
+          3: ['09:00', '10:00', '19:00', '20:00'],
+          4: ['09:00', '10:00', '19:00', '20:00'],
+          5: ['09:00', '10:00', '19:00', '20:00'],
+        }
+      }
+    };
+
+    const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
+
+    // =====================================================
+    // 앱 상태
+    // =====================================================
+    let db = null;
+    let currentUser = null;
+    let isAdmin = false;
+    let activeScreen = 'home';
+
+    // 예약 화면 상태
+    let rv = {
+      classType: 'jumping',
+      selectedDate: null
+    };
+
+    // =====================================================
+    // 초기화
+    // =====================================================
+    async function init() {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // 자동 로그인 확인
+      const saved = localStorage.getItem('rsv_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.is_admin) {
+            currentUser = parsed; isAdmin = true;
+            return enterApp();
+          }
+          // DB에서 유저 확인
+          const { data } = await db.from('users').select('*').eq('id', parsed.id).single();
+          if (data) {
+            currentUser = data; isAdmin = !!data.is_admin;
+            return enterApp();
+          }
+        } catch (e) { }
+        localStorage.removeItem('rsv_user');
+      }
+      showAuth();
+    }
+
+    // =====================================================
+    // 인증
+    // =====================================================
+    function showAuth() {
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+    }
+
+    function showLoginForm() {
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('login-phone').value = '';
+      document.getElementById('login-pin').value = '';
+    }
+
+    function showRegisterForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+      document.getElementById('reg-name').value = '';
+      document.getElementById('reg-phone').value = '';
+      document.getElementById('reg-pin').value = '';
+    }
+
+    async function doLogin() {
+      const phone = document.getElementById('login-phone').value.trim().replace(/\D/g, '');
+      const pin = document.getElementById('login-pin').value.trim();
+
+      if (!phone || !pin) return showToast('전화번호와 비밀번호를 입력해주세요.');
+
+      // 관리자 로그인
+      if (document.getElementById('login-phone').value.trim() === ADMIN_PHONE && pin === ADMIN_PIN) {
+        currentUser = { name: '관리자', phone: 'admin', is_admin: true };
+        isAdmin = true;
+        localStorage.setItem('rsv_user', JSON.stringify(currentUser));
+        return enterApp();
+      }
+
+      showLoading(true);
+      const { data, error } = await db.from('users').select('*').eq('phone', phone).eq('pin', pin).single();
+      showLoading(false);
+
+      if (!data || error) return showToast('전화번호 또는 비밀번호가 올바르지 않습니다.');
+
+      currentUser = data; isAdmin = !!data.is_admin;
+      localStorage.setItem('rsv_user', JSON.stringify(currentUser));
+      enterApp();
+    }
+
+    async function doRegister() {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim().replace(/\D/g, '');
+      const pin = document.getElementById('reg-pin').value.trim();
+
+      if (!name) return showToast('이름을 입력해주세요.');
+      if (!phone) return showToast('전화번호를 입력해주세요.');
+      if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) return showToast('비밀번호는 숫자 4자리입니다.');
+
+      showLoading(true);
+      const { data, error } = await db.from('users').insert([{ name, phone, pin, is_admin: false }]).select().single();
+      showLoading(false);
+
+      if (error) {
+        if (error.code === '23505') return showToast('이미 등록된 전화번호입니다.');
+        return showToast('오류가 발생했습니다. 다시 시도해주세요.');
+      }
+
+      currentUser = data; isAdmin = false;
+      localStorage.setItem('rsv_user', JSON.stringify(currentUser));
+      enterApp();
+    }
+
+    function doLogout() {
+      if (!confirm('로그아웃 하시겠습니까?')) return;
+      currentUser = null; isAdmin = false;
+      localStorage.removeItem('rsv_user');
+      showAuth();
+      showLoginForm();
+    }
+
+    // =====================================================
+    // 앱 진입
+    // =====================================================
+    function enterApp() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      document.getElementById('header-username').textContent = currentUser.name + '님';
+
+      // 관리자 탭 표시
+      document.getElementById('nav-admin').style.display = isAdmin ? 'flex' : 'none';
+
+      navigateTo('home');
+    }
+
+    // =====================================================
+    // 네비게이션
+    // =====================================================
+    async function navigateTo(screen) {
+      activeScreen = screen;
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('screen-' + screen).classList.add('active');
+      const navEl = document.getElementById('nav-' + screen);
+      if (navEl) navEl.classList.add('active');
+
+      if (screen === 'home') await loadHome();
+      if (screen === 'reserve') { rv.selectedDate = null; await loadReserve(); }
+      if (screen === 'my') await loadMy();
+      if (screen === 'admin') await loadAdmin();
+    }
+
+    // =====================================================
+    // 홈 화면
+    // =====================================================
+    async function loadHome() {
+      const today = new Date();
+      const dow = today.getDay(); // 0=일, 6=토
+      const dateStr = fmtDate(today);
+      const todayJ = SCHEDULE.jumping.slots[dow] || [];
+      const todayH = SCHEDULE.heated.slots[dow] || [];
+
+      let html = '';
+
+      // 인사말
+      const h = today.getHours();
+      const greeting = h < 12 ? '좋은 아침이에요' : h < 18 ? '좋은 오후예요' : '좋은 저녁이에요';
+      html += `<div style="padding:4px 2px 12px">
+    <p style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${greeting}, ${currentUser.name}님 👋</p>
+    <p style="font-size:13px;color:var(--text-sub);margin-top:4px">${today.getMonth() + 1}월 ${today.getDate()}일 (${DAYS_KO[dow]}요일) 수업 현황</p>
+  </div>`;
+
+      if (todayJ.length === 0 && todayH.length === 0) {
+        html += `<div class="weekend-banner">
+      <div class="icon">🏖️</div>
+      <h3>오늘은 수업이 없어요</h3>
+      <p>주말은 편히 쉬세요!</p>
+    </div>`;
+        document.getElementById('home-content').innerHTML = html;
+        return;
+      }
+
+      showLoading(true);
+      const { data: rsvs } = await db.from('reservations')
+        .select('*').eq('date', dateStr).eq('status', 'confirmed');
+      showLoading(false);
+
+      const countMap = {};
+      (rsvs || []).forEach(r => { const k = r.class_type + '_' + r.time_slot; countMap[k] = (countMap[k] || 0) + 1; });
+      const myMap = {};
+      if (!isAdmin) (rsvs || []).filter(r => r.user_id === currentUser.id).forEach(r => { myMap[r.class_type + '_' + r.time_slot] = r; });
+
+      function renderOverview(classType, times) {
+        const cfg = SCHEDULE[classType];
+        let rows = '';
+        times.forEach(t => {
+          const key = classType + '_' + t;
+          const cnt = countMap[key] || 0;
+          const pct = Math.round((cnt / cfg.max) * 100);
+          const isMine = myMap[key];
+          rows += `<div class="overview-slot ${isMine ? 'my-reserved' : ''}">
+        <div class="overview-time">${fmtTime(t)}</div>
+        <div class="overview-count">${cnt}/${cfg.max}명</div>
+        <div class="overview-bar"><div class="overview-bar-fill ${cnt >= cfg.max ? 'full' : ''}" style="width:${pct}%"></div></div>
+        ${isMine ? '<div style="font-size:11px;font-weight:700;color:var(--primary);margin-top:4px">✓ 예약됨</div>' : ''}
+      </div>`;
+        });
+        return `<div class="card">
+      <p class="section-title">${cfg.emoji} ${cfg.label}</p>
+      <div class="overview-grid">${rows}</div>
+    </div>`;
+      }
+
+      if (todayJ.length) html += renderOverview('jumping', todayJ);
+      if (todayH.length) html += renderOverview('heated', todayH);
+
+      // 오늘 내 예약 요약
+      const myToday = Object.values(myMap);
+      if (!isAdmin && myToday.length > 0) {
+        html += `<div class="card">
+      <p class="section-title">✅ 오늘 내 예약</p>`;
+        myToday.forEach(r => {
+          const cfg = SCHEDULE[r.class_type];
+          html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:22px">${cfg.emoji}</span>
+        <div>
+          <div style="font-weight:700">${cfg.label}</div>
+          <div style="font-size:13px;color:var(--text-sub)">${fmtTime(r.time_slot)}</div>
+        </div>
+        <span class="tag tag-confirmed" style="margin-left:auto">예약완료</span>
+      </div>`;
+        });
+        html += '</div>';
+      }
+
+      html += `<div style="margin-top:4px">
+    <button class="btn btn-primary" onclick="navigateTo('reserve')">📅 수업 예약하기</button>
+  </div>`;
+
+      document.getElementById('home-content').innerHTML = html;
+    }
+
+    // =====================================================
+    // 예약 화면
+    // =====================================================
+    async function loadReserve() {
+      renderReserveTabs();
+      renderReserveDates();
+      if (rv.selectedDate) await loadSlots();
+      else document.getElementById('reserve-slots').innerHTML =
+        `<p style="text-align:center;color:var(--text-sub);padding:30px">날짜를 선택해주세요</p>`;
+    }
+
+    function renderReserveTabs() {
+      document.getElementById('reserve-tabs').innerHTML =
+        ['jumping', 'heated'].map(t => {
+          const cfg = SCHEDULE[t];
+          return `<button class="class-tab ${rv.classType === t ? 'active' : ''}" onclick="selectClassType('${t}')">${cfg.emoji} ${cfg.label}</button>`;
+        }).join('');
+    }
+
+    async function selectClassType(type) {
+      rv.classType = type; rv.selectedDate = null;
+      renderReserveTabs(); renderReserveDates();
+      document.getElementById('reserve-slots').innerHTML =
+        `<p style="text-align:center;color:var(--text-sub);padding:30px">날짜를 선택해주세요</p>`;
+    }
+
+    function renderReserveDates() {
+      const today = new Date();
+      const schedule = SCHEDULE[rv.classType];
+      let html = '';
+
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        const dow = d.getDay();
+        if (!schedule.slots[dow]) continue;
+        const isSelected = rv.selectedDate && fmtDate(d) === fmtDate(rv.selectedDate);
+        const isToday = i === 0;
+        html += `<div class="date-item ${isSelected ? 'active' : ''}" onclick="selectDate(${d.getTime()})">
+      <span class="date-day-label">${DAYS_KO[dow]}</span>
+      <span class="date-num">${d.getDate()}</span>
+      ${isToday ? '<div class="date-today-dot"></div>' : '<div style="height:8px"></div>'}
+    </div>`;
+      }
+      document.getElementById('reserve-date-scroll').innerHTML = html;
+
+      // 첫 번째 날짜 자동 선택
+      if (!rv.selectedDate) {
+        for (let i = 0; i < 14; i++) {
+          const d = new Date(today); d.setDate(today.getDate() + i);
+          if (schedule.slots[d.getDay()]) { rv.selectedDate = d; renderReserveDates(); return; }
+        }
+      }
+    }
+
+    async function selectDate(ts) {
+      rv.selectedDate = new Date(ts);
+      renderReserveDates();
+      await loadSlots();
+    }
+
+    async function loadSlots() {
+      if (!rv.selectedDate) return;
+      showLoading(true);
+
+      const dateStr = fmtDate(rv.selectedDate);
+      const dow = rv.selectedDate.getDay();
+      const cfg = SCHEDULE[rv.classType];
+      const times = cfg.slots[dow] || [];
+
+      // 확정 + 대기 예약 모두 조회
+      const { data: rsvs } = await db.from('reservations')
+        .select('*, users(name)')
+        .eq('date', dateStr).eq('class_type', rv.classType)
+        .in('status', ['confirmed', 'waitlist']);
+
+      showLoading(false);
+
+      const confirmedCnt = {}, waitlistCnt = {}, myRsvs = {};
+      (rsvs || []).forEach(r => {
+        if (r.status === 'confirmed') confirmedCnt[r.time_slot] = (confirmedCnt[r.time_slot] || 0) + 1;
+        if (r.status === 'waitlist') waitlistCnt[r.time_slot] = (waitlistCnt[r.time_slot] || 0) + 1;
+        if (!isAdmin && r.user_id === currentUser.id) myRsvs[r.time_slot] = r;
+      });
+
+      let html = '';
+      times.forEach(time => {
+        const conf = confirmedCnt[time] || 0;
+        const wait = waitlistCnt[time] || 0;
+        const remain = cfg.max - conf;
+        const myRsv = myRsvs[time];
+
+        let itemClass = '', badgeHtml = '', actionHtml = '';
+
+        if (myRsv) {
+          if (myRsv.status === 'confirmed') {
+            itemClass = 'status-my-confirmed';
+            badgeHtml = `<span class="slot-badge badge-confirmed">✓ 예약완료</span>`;
+            if (!isAdmin) {
+              actionHtml = `<button class="btn btn-sm btn-ghost-cancel" onclick="cancelRsv('${myRsv.id}','${rv.classType}','${dateStr}','${time}')">예약 취소</button>`;
+            }
+          } else {
+            itemClass = 'status-my-waitlist';
+            badgeHtml = `<span class="slot-badge badge-my-wait">대기 ${myRsv.waitlist_position}번</span>`;
+            if (!isAdmin) {
+              actionHtml = `<button class="btn btn-sm btn-ghost-wait" onclick="cancelRsv('${myRsv.id}','${rv.classType}','${dateStr}','${time}')">대기 취소</button>`;
+            }
+          }
+        } else if (remain > 0) {
+          itemClass = 'status-available';
+          badgeHtml = `<span class="slot-badge badge-available">잔여 ${remain}/${cfg.max}</span>`;
+          if (!isAdmin) {
+            actionHtml = `<button class="btn btn-sm btn-primary" onclick="doReserve('${rv.classType}','${dateStr}','${time}')">예약하기</button>`;
+          }
+        } else {
+          itemClass = 'status-full';
+          badgeHtml = `<span class="slot-badge badge-full">마감</span>`;
+          if (!isAdmin) {
+            actionHtml = `<button class="btn btn-sm btn-ghost-wait" onclick="doWaitlist('${rv.classType}','${dateStr}','${time}',${wait + 1})">대기 신청 ${wait > 0 ? '(현재 ' + wait + '명)' : ''}</button>`;
+          }
+        }
+
+        const adminInfo = isAdmin && rsvs
+          ? (rsvs || []).filter(r => r.time_slot === time && r.status === 'confirmed').map(r => r.users?.name || '').join(', ')
+          : '';
+
+        html += `<div class="slot-item ${itemClass}">
+      <div class="slot-top">
+        <div>
+          <div class="slot-time">${fmtTime(time)}</div>
+          <div class="slot-count">${conf}/${cfg.max}명 확정${wait > 0 ? ' · 대기 ' + wait + '명' : ''}</div>
+          ${adminInfo ? `<div style="font-size:12px;color:var(--text-sub);margin-top:4px">${adminInfo}</div>` : ''}
+        </div>
+        ${badgeHtml}
+      </div>
+      ${actionHtml ? `<div class="slot-actions">${actionHtml}</div>` : ''}
+    </div>`;
+      });
+
+      document.getElementById('reserve-slots').innerHTML = html || '<p style="text-align:center;color:var(--text-sub);padding:30px">시간표가 없습니다</p>';
+    }
+
+    // =====================================================
+    // 예약 처리
+    // =====================================================
+    async function doReserve(classType, dateStr, timeSlot) {
+      showLoading(true);
+      const { error } = await db.from('reservations').insert([{ 
