@@ -9,19 +9,19 @@
   <title>클래스 예약</title>
   <style>
     :root {
-      --primary: #3D8B5E;
-      --primary-light: #E8F5EE;
-      --primary-dark: #2D6B48;
-      --orange: #E8622A;
-      --orange-light: #FEF0E9;
-      --bg: #F2F4F2;
+      --primary: #D4548A;
+      --primary-light: #FDEDF5;
+      --primary-dark: #A83870;
+      --orange: #F47C96;
+      --orange-light: #FFF0F4;
+      --bg: #FFF5FA;
       --card: #FFFFFF;
-      --text: #1A1A1A;
-      --text-sub: #666666;
-      --border: #E5E5E5;
-      --success: #3D8B5E;
-      --warning: #E08B2C;
-      --danger: #D93025;
+      --text: #2A1A23;
+      --text-sub: #8A6070;
+      --border: #F0D6E4;
+      --success: #C2477A;
+      --warning: #E07070;
+      --danger: #C0334D;
     }
 
     * {
@@ -106,23 +106,22 @@
       flex-direction: column;
       justify-content: center;
       padding: 48px 24px 40px;
-      background: #fff;
+      background: linear-gradient(160deg, #FFF0F7 0%, #FFE4F0 40%, #FFF5FA 100%);
     }
 
     .auth-logo {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 36px;
     }
 
     .auth-logo .logo-icon {
-      font-size: 52px;
-      line-height: 1;
-      margin-bottom: 12px;
+      display: block;
+      margin-bottom: 8px;
     }
 
     .auth-logo h1 {
       font-size: 26px;
-      font-weight: 800;
+      font-weight: 900;
       color: var(--primary);
       letter-spacing: -0.5px;
     }
@@ -131,6 +130,15 @@
       color: var(--text-sub);
       font-size: 14px;
       margin-top: 6px;
+    }
+
+    /* auth card wrapper */
+    #login-form, #register-form, #admin-form {
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(12px);
+      border-radius: 24px;
+      padding: 28px 20px 20px;
+      box-shadow: 0 8px 32px rgba(212,84,138,0.12);
     }
 
     /* ========== FORMS ========== */
@@ -162,6 +170,7 @@
     .form-group input:focus {
       border-color: var(--primary);
       background: #fff;
+      box-shadow: 0 0 0 3px rgba(212,84,138,0.1);
     }
 
     /* ========== BUTTONS ========== */
@@ -185,8 +194,13 @@
     }
 
     .btn-primary {
-      background: var(--primary);
+      background: linear-gradient(135deg, #E06FA0 0%, #C2447A 100%);
       color: #fff;
+      box-shadow: 0 4px 16px rgba(194,68,122,0.35);
+    }
+
+    .btn-primary:active {
+      box-shadow: 0 2px 8px rgba(194,68,122,0.25);
     }
 
     .btn-outline {
@@ -241,7 +255,7 @@
 
     /* ========== HEADER ========== */
     .header {
-      background: var(--primary);
+      background: linear-gradient(135deg, #E06FA0 0%, #C2447A 100%);
       color: #fff;
       padding: 14px 18px;
       padding-top: max(14px, env(safe-area-inset-top, 14px));
@@ -251,6 +265,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      box-shadow: 0 2px 16px rgba(194,68,122,0.3);
     }
 
     .header-title {
@@ -319,6 +334,10 @@
       color: var(--primary);
     }
 
+    .nav-btn.active .nav-icon {
+      filter: drop-shadow(0 2px 4px rgba(212,84,138,0.3));
+    }
+
     .nav-icon {
       font-size: 22px;
       line-height: 1;
@@ -340,7 +359,8 @@
       border-radius: 18px;
       padding: 16px;
       margin-bottom: 12px;
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 12px rgba(212,84,138,0.08);
+      border: 1px solid rgba(212,84,138,0.08);
     }
 
     .section-title {
@@ -536,7 +556,8 @@
       border-radius: 16px;
       padding: 16px;
       margin-bottom: 10px;
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 12px rgba(212,84,138,0.08);
+      border: 1px solid rgba(212,84,138,0.1);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -673,16 +694,24 @@
 
     /* ========== WEEKEND BANNER ========== */
     .weekend-banner {
-      background: linear-gradient(135deg, #E8F5EE 0%, #D1EAD9 100%);
+      background: linear-gradient(135deg, #FDEDF5 0%, #F9C8DF 100%);
       border-radius: 18px;
       padding: 28px 20px;
       text-align: center;
       margin-bottom: 12px;
+      border: 1px solid #F0C0D8;
     }
 
     .weekend-banner .icon {
-      font-size: 40px;
+      font-size: 48px;
       margin-bottom: 10px;
+      animation: bounce 1.4s ease infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
     }
 
     .weekend-banner h3 {
@@ -695,6 +724,28 @@
       font-size: 14px;
       color: var(--primary);
       margin-top: 6px;
+    }
+
+    /* ========== CLASS SECTION HEADER ========== */
+    .class-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px 10px;
+      margin: 8px 0 4px;
+      background: linear-gradient(135deg, #FDEDF5 0%, #FFF0F7 100%);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .class-section-header .class-emoji {
+      font-size: 26px;
+    }
+
+    .class-section-header .class-label {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--primary-dark);
     }
   </style>
 </head>
@@ -712,7 +763,90 @@
   <!-- ======================== AUTH SCREEN ======================== -->
   <div id="auth-screen">
     <div class="auth-logo">
-      <div class="logo-icon">🏋️</div>
+      <span class="logo-icon">
+        <svg width="110" height="110" viewBox="0 0 680 520" style="display:block;margin:0 auto">
+          <defs>
+            <style>
+              .jump-anim{animation:jumpUp 1.6s ease-in-out infinite;transform-origin:340px 320px}
+              .shadow-anim{animation:shadowPulse 1.6s ease-in-out infinite;transform-origin:340px 430px}
+              .sparkle{animation:twinkle 1.6s ease-in-out infinite}
+              .sparkle2{animation:twinkle 1.6s ease-in-out 0.4s infinite}
+              .sparkle3{animation:twinkle 1.6s ease-in-out 0.8s infinite}
+              @keyframes jumpUp{0%{transform:translateY(0)}40%{transform:translateY(-90px)}55%{transform:translateY(-95px)}100%{transform:translateY(0)}}
+              @keyframes shadowPulse{0%{transform:scaleX(1);opacity:.22}40%{transform:scaleX(.45);opacity:.08}55%{transform:scaleX(.38);opacity:.06}100%{transform:scaleX(1);opacity:.22}}
+              @keyframes twinkle{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.2)}}
+            </style>
+            <radialGradient id="lg-matGrad" cx="50%" cy="30%" r="60%"><stop offset="0%" stop-color="#F9C8DF"/><stop offset="100%" stop-color="#E8749E"/></radialGradient>
+            <radialGradient id="lg-shadowGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#C2447A" stop-opacity=".35"/><stop offset="100%" stop-color="#C2447A" stop-opacity="0"/></radialGradient>
+          </defs>
+          <circle cx="340" cy="310" r="230" fill="#FFF0F7"/>
+          <circle cx="340" cy="310" r="180" fill="#FDE8F4"/>
+          <rect x="185" y="430" width="18" height="70" rx="9" fill="#D4548A"/>
+          <rect x="163" y="490" width="58" height="14" rx="7" fill="#A83870"/>
+          <rect x="475" y="430" width="18" height="70" rx="9" fill="#D4548A"/>
+          <rect x="457" y="490" width="58" height="14" rx="7" fill="#A83870"/>
+          <line x1="194" y1="430" x2="240" y2="420" stroke="#D4548A" stroke-width="10" stroke-linecap="round"/>
+          <line x1="484" y1="430" x2="438" y2="420" stroke="#D4548A" stroke-width="10" stroke-linecap="round"/>
+          <ellipse cx="340" cy="422" rx="162" ry="22" fill="#C2447A"/>
+          <ellipse cx="340" cy="416" rx="152" ry="18" fill="url(#lg-matGrad)"/>
+          <ellipse cx="340" cy="415" rx="120" ry="13" fill="none" stroke="#E8A0C0" stroke-width="1.5" stroke-dasharray="6,4"/>
+          <ellipse cx="340" cy="415" rx="75" ry="8" fill="none" stroke="#E8A0C0" stroke-width="1" stroke-dasharray="4,4"/>
+          <line x1="200" y1="415" x2="480" y2="415" stroke="#E8A0C0" stroke-width="1.2" stroke-dasharray="5,4"/>
+          <line x1="340" y1="400" x2="340" y2="430" stroke="#E8A0C0" stroke-width="1.2" stroke-dasharray="5,4"/>
+          <ellipse class="shadow-anim" cx="340" cy="418" rx="90" ry="10" fill="url(#lg-shadowGrad)"/>
+          <g class="jump-anim">
+            <path d="M292 202 Q300 150 340 146 Q380 143 388 202 Q374 188 340 184 Q306 188 292 202Z" fill="#7B3F6A"/>
+            <path d="M358 158 Q375 140 390 118 Q405 96 395 78 Q380 88 372 108 Q365 128 358 148Z" fill="#7B3F6A"/>
+            <path d="M356 160 Q378 145 400 125 Q418 108 415 88 Q398 95 386 116 Q374 136 360 158Z" fill="#6B3560"/>
+            <path d="M360 156 Q370 132 368 108 Q366 90 356 82 Q348 96 350 116 Q352 136 358 152Z" fill="#8A4575"/>
+            <ellipse cx="362" cy="162" rx="10" ry="7" fill="#E8749E" transform="rotate(-30 362 162)"/>
+            <ellipse cx="362" cy="162" rx="6" ry="4" fill="#F9A8C0" transform="rotate(-30 362 162)"/>
+            <ellipse cx="340" cy="196" rx="46" ry="52" fill="#FDDDC0"/>
+            <ellipse cx="315" cy="211" rx="12" ry="7" fill="#F9A8C0" opacity=".55"/>
+            <ellipse cx="365" cy="211" rx="12" ry="7" fill="#F9A8C0" opacity=".55"/>
+            <path d="M318 186 Q325 181 332 184" fill="none" stroke="#7B3F6A" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M348 184 Q355 181 362 186" fill="none" stroke="#7B3F6A" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M316 197 Q325 191 333 197" fill="none" stroke="#5C2A4A" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M347 197 Q356 191 364 197" fill="none" stroke="#5C2A4A" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="320" cy="196" r="2.2" fill="#fff"/>
+            <circle cx="351" cy="196" r="2.2" fill="#fff"/>
+            <path d="M326 214 Q340 227 354 214" fill="none" stroke="#C2447A" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M328 215 Q340 223 352 215 Q340 221 328 215Z" fill="#fff"/>
+            <ellipse cx="340" cy="207" rx="4" ry="3" fill="#F0B090" opacity=".5"/>
+            <path d="M295 186 Q305 156 340 151 Q375 156 385 186 Q370 171 340 169 Q310 171 295 186Z" fill="#7B3F6A"/>
+            <path d="M296 181 Q340 169 384 181" fill="none" stroke="#E8749E" stroke-width="5" stroke-linecap="round"/>
+            <rect x="328" y="241" width="24" height="22" rx="10" fill="#FDDDC0"/>
+            <path d="M285 261 Q290 251 328 249 L340 259 L352 249 Q370 251 395 261 L400 331 Q370 341 340 343 Q310 341 280 331Z" fill="#E8749E"/>
+            <path d="M315 251 Q340 266 365 251" fill="none" stroke="#D4548A" stroke-width="2"/>
+            <path d="M285 266 Q255 241 245 211 Q242 201 252 199 Q262 198 267 208 Q275 233 300 256Z" fill="#FDDDC0"/>
+            <circle cx="248" cy="201" r="14" fill="#FDDDC0"/>
+            <ellipse cx="238" cy="193" rx="5" ry="9" fill="#FDDDC0" transform="rotate(-20 238 193)"/>
+            <ellipse cx="245" cy="189" rx="5" ry="9" fill="#FDDDC0" transform="rotate(-5 245 189)"/>
+            <ellipse cx="253" cy="189" rx="5" ry="9" fill="#FDDDC0" transform="rotate(10 253 189)"/>
+            <ellipse cx="260" cy="192" rx="5" ry="9" fill="#FDDDC0" transform="rotate(22 260 192)"/>
+            <path d="M395 266 Q425 241 435 211 Q438 201 428 199 Q418 198 413 208 Q405 233 380 256Z" fill="#FDDDC0"/>
+            <circle cx="432" cy="201" r="14" fill="#FDDDC0"/>
+            <ellipse cx="440" cy="193" rx="5" ry="9" fill="#FDDDC0" transform="rotate(20 440 193)"/>
+            <ellipse cx="434" cy="189" rx="5" ry="9" fill="#FDDDC0" transform="rotate(5 434 189)"/>
+            <ellipse cx="426" cy="189" rx="5" ry="9" fill="#FDDDC0" transform="rotate(-10 426 189)"/>
+            <ellipse cx="419" cy="192" rx="5" ry="9" fill="#FDDDC0" transform="rotate(-22 419 192)"/>
+            <path d="M340 339 Q360 343 375 361 Q385 391 380 421 Q372 425 362 421 Q358 396 348 369 Q344 353 340 346Z" fill="#C2447A"/>
+            <path d="M340 339 Q320 343 305 361 Q295 391 300 421 Q308 425 318 421 Q322 396 332 369 Q336 353 340 346Z" fill="#C2447A"/>
+            <ellipse cx="309" cy="425" rx="20" ry="11" fill="#A83870" transform="rotate(-10 309 425)"/>
+            <ellipse cx="294" cy="429" rx="14" ry="9" fill="#D4548A" transform="rotate(-10 294 429)"/>
+            <ellipse cx="371" cy="425" rx="20" ry="11" fill="#A83870" transform="rotate(10 371 425)"/>
+            <ellipse cx="386" cy="429" rx="14" ry="9" fill="#D4548A" transform="rotate(10 386 429)"/>
+          </g>
+          <g class="sparkle" style="transform-origin:210px 160px"><path d="M210 148L213 158L223 161L213 164L210 174L207 164L197 161L207 158Z" fill="#F47C96"/></g>
+          <g class="sparkle2" style="transform-origin:470px 150px"><path d="M470 138L473 148L483 151L473 154L470 164L467 154L457 151L467 148Z" fill="#E06FA0"/></g>
+          <g class="sparkle3" style="transform-origin:490px 250px"><path d="M490 242L492 249L499 251L492 253L490 260L488 253L481 251L488 249Z" fill="#F9A8C0"/></g>
+          <g class="sparkle2" style="transform-origin:190px 255px"><path d="M190 247L192 254L199 256L192 258L190 265L188 258L181 256L188 254Z" fill="#F9A8C0"/></g>
+          <circle cx="255" cy="170" r="5" fill="#F47C96" class="sparkle3"/>
+          <circle cx="425" cy="185" r="4" fill="#E8749E" class="sparkle"/>
+          <circle cx="230" cy="310" r="4" fill="#F9C8DF" class="sparkle2"/>
+          <circle cx="455" cy="300" r="5" fill="#F9C8DF" class="sparkle3"/>
+        </svg>
+      </span>
       <h1>클래스 예약</h1>
       <p>점핑 &amp; 온열 수업 예약 시스템</p>
     </div>
@@ -797,7 +931,7 @@
 
     <!-- Header -->
     <div class="header">
-      <div class="header-title">🏋️ 클래스 예약</div>
+      <div class="header-title">🤸‍♀️ 클래스 예약</div>
       <div class="header-right">
         <span class="header-user" id="header-username"></span>
         <button class="btn-logout" onclick="doLogout()">로그아웃</button>
@@ -827,10 +961,10 @@
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
       <button class="nav-btn active" id="nav-home" onclick="navigateTo('home')">
-        <span class="nav-icon">📅</span><span>예약</span>
+        <span class="nav-icon">🤸‍♀️</span><span>예약</span>
       </button>
       <button class="nav-btn" id="nav-my" onclick="navigateTo('my')">
-        <span class="nav-icon">📋</span><span>내 예약</span>
+        <span class="nav-icon">💗</span><span>내 예약</span>
       </button>
       <button class="nav-btn" id="nav-admin" onclick="navigateTo('admin')" style="display:none">
         <span class="nav-icon">⚙️</span><span>관리자</span>
@@ -857,7 +991,7 @@
     // =====================================================
     const SCHEDULE = {
       jumping: {
-        label: '점핑 클래스', emoji: '🏃',
+        label: '점핑 클래스', emoji: '🤸‍♀️',
         max: 10,
         slots: {
           1: ['09:00', '10:00', '19:00', '20:00', '21:00'], // 월
@@ -1078,10 +1212,14 @@
       const h = today.getHours();
 
       // 인사말
-      const greeting = h < 12 ? '좋은 아침이에요 ☀️' : h < 18 ? '좋은 오후예요 😊' : '좋은 저녁이에요 🌙';
+      const greeting = h < 12 ? '좋은 아침이에요 ☀️' : h < 18 ? '좋은 오후예요 💕' : '좋은 저녁이에요 🌙';
       document.getElementById('home-greeting').innerHTML = `
-        <div style="padding:4px 2px 12px">
-          <p style="font-size:17px;font-weight:800;letter-spacing:-0.5px">${greeting}, ${currentUser.name}님</p>
+        <div style="padding:8px 4px 14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:36px;filter:drop-shadow(0 2px 6px rgba(212,84,138,0.3))">🤸‍♀️</span>
+          <div>
+            <p style="font-size:18px;font-weight:900;letter-spacing:-0.5px;color:var(--primary-dark)">${greeting}</p>
+            <p style="font-size:14px;color:var(--text-sub);margin-top:2px">${currentUser.name}님, 오늘도 건강하게 운동해요!</p>
+          </div>
         </div>`;
 
       // 날짜 선택 초기화: 오늘 또는 첫 번째 예약 가능한 평일
@@ -1156,7 +1294,7 @@
       const isToday = fmtDate(rv.selectedDate) === fmtDate(new Date());
       const myRsvList = Object.values(myRsvMap);
       if (!isAdmin && isToday && myRsvList.length > 0) {
-        let myHtml = `<div class="card"><p class="section-title">✅ 오늘 내 예약</p>`;
+        let myHtml = `<div class="card" style="background:linear-gradient(135deg,#FDEDF5 0%,#FFF0F7 100%);border:1px solid #F0C0D8"><p class="section-title" style="color:var(--primary-dark)">💗 오늘 내 예약</p>`;
         myRsvList.forEach(r => {
           const cfg = SCHEDULE[r.class_type];
           myHtml += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -1177,7 +1315,14 @@
         const times = cfg.slots[dow] || [];
         if (!times.length) { document.getElementById(containerId).innerHTML = ''; return; }
 
-        let html = `<div class="card"><p class="section-title">${cfg.emoji} ${cfg.label}</p>`;
+        let html = `<div class="card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1.5px solid var(--border)">
+            <span style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(212,84,138,0.25))">${cfg.emoji}</span>
+            <div>
+              <p style="font-size:17px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.3px">${cfg.label}</p>
+              <p style="font-size:12px;color:var(--text-sub);margin-top:1px">최대 ${cfg.max}명</p>
+            </div>
+          </div>`;
         times.forEach(time => {
           const k = classType + '_' + time;
           const conf   = confirmedCnt[k] || 0;
@@ -1572,7 +1717,7 @@
           <div class="form-group">
             <label>수업 종류</label>
             <select id="add-rsv-class" style="width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;background:#fafafa;outline:none">
-              <option value="jumping">🏃 점핑 클래스</option>
+              <option value="jumping">🤸‍♀️ 점핑 클래스</option>
               <option value="heated">🔥 온열 클래스</option>
             </select>
           </div>
