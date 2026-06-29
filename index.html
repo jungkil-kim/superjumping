@@ -1074,10 +1074,7 @@
     </div>`;
       }
 
-      if (todayJ.length) html += renderOverview('jumping', todayJ);
-      if (todayH.length) html += renderOverview('heated', todayH);
-
-      // 오늘 내 예약 요약
+      // 오늘 내 예약 요약 (최상단)
       const myToday = Object.values(myMap);
       if (!isAdmin && myToday.length > 0) {
         html += `<div class="card">
@@ -1096,9 +1093,12 @@
         html += '</div>';
       }
 
-      html += `<div style="margin-top:4px">
+      html += `<div style="margin-bottom:12px">
     <button class="btn btn-primary" onclick="navigateTo('reserve')">📅 수업 예약하기</button>
   </div>`;
+
+      if (todayJ.length) html += renderOverview('jumping', todayJ);
+      if (todayH.length) html += renderOverview('heated', todayH);
 
       document.getElementById('home-content').innerHTML = html;
     }
