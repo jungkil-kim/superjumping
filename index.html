@@ -728,6 +728,12 @@
         <input type="password" id="login-pin" placeholder="• • • •" maxlength="4" inputmode="numeric"
           autocomplete="current-password">
       </div>
+      <!-- 자동 로그인 -->
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;font-size:14px;color:var(--text-sub)">
+        <input type="checkbox" id="auto-login-chk" checked
+          style="width:18px;height:18px;accent-color:var(--primary);cursor:pointer">
+        자동 로그인 (다음 접속 시 로그인 생략)
+      </label>
       <button class="btn btn-primary" onclick="doLogin()">로그인</button>
       <div class="divider"></div>
       <p class="text-center" style="font-size:14px;color:var(--text-sub)">
@@ -757,11 +763,33 @@
       </p>
     </div>
 
-  <!-- 관리자 숨김 링크 -->
-  <div style="position:fixed;bottom:8px;right:12px;opacity:0.08;font-size:10px;cursor:pointer;user-select:none"
-       onclick="document.getElementById('login-phone').value='morsejjang';document.getElementById('login-pin').focus()">
-    ⚙
-  </div>
+    <!-- 관리자 로그인 폼 -->
+    <div id="admin-form" style="display:none">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:36px">🔐</div>
+        <p style="font-weight:800;font-size:18px;margin-top:8px">관리자 로그인</p>
+      </div>
+      <div class="form-group">
+        <label>관리자 ID</label>
+        <input type="text" id="admin-login-id" placeholder="관리자 아이디 입력" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input type="password" id="admin-login-pw" placeholder="비밀번호 입력" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" onclick="doAdminLogin()">관리자 로그인</button>
+      <div class="divider"></div>
+      <p class="text-center" style="font-size:14px;color:var(--text-sub)">
+        <span class="text-link" onclick="showLoginForm()">← 일반 로그인으로 돌아가기</span>
+      </p>
+    </div>
+
+    <!-- 관리자 링크 -->
+    <div style="text-align:center;margin-top:32px">
+      <span onclick="showAdminForm()"
+        style="font-size:12px;color:#ccc;cursor:pointer;user-select:none">관리</span>
+    </div>
+
   </div>
 
   <!-- ======================== MAIN APP ======================== -->
@@ -876,19 +904,14 @@
         if (!window.supabase) throw new Error('Supabase 라이브러리 로드 실패');
         db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 자동 로그인 확인
+        // 자동 로그인: localStorage에 저장된 사용자 정보로 바로 입장
         const saved = localStorage.getItem('rsv_user');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            if (parsed.is_admin) {
-              currentUser = parsed; isAdmin = true;
-              return enterApp();
-            }
-            // DB에서 유저 확인
-            const { data } = await db.from('users').select('*').eq('id', parsed.id).single();
-            if (data) {
-              currentUser = data; isAdmin = !!data.is_admin;
+            if (parsed && (parsed.is_admin || (parsed.id && parsed.name))) {
+              currentUser = parsed;
+              isAdmin = !!parsed.is_admin;
               return enterApp();
             }
           } catch (e) { }
@@ -896,7 +919,6 @@
         }
       } catch (e) {
         console.error('초기화 오류:', e);
-        // 오류가 있어도 로그인 화면은 항상 표시
       }
       showAuth();
     }
@@ -912,6 +934,7 @@
     function showLoginForm() {
       document.getElementById('login-form').style.display = 'block';
       document.getElementById('register-form').style.display = 'none';
+      document.getElementById('admin-form').style.display = 'none';
       document.getElementById('login-phone').value = '';
       document.getElementById('login-pin').value = '';
     }
@@ -919,9 +942,27 @@
     function showRegisterForm() {
       document.getElementById('login-form').style.display = 'none';
       document.getElementById('register-form').style.display = 'block';
-      document.getElementById('reg-name').value = '';
-      document.getElementById('reg-phone').value = '';
-      document.getElementById('reg-pin').value = '';
+      document.getElementById('admin-form').style.display = 'none';
+    }
+
+    function showAdminForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('admin-form').style.display = 'block';
+      document.getElementById('admin-login-id').value = '';
+      document.getElementById('admin-login-pw').value = '';
+      document.getElementById('admin-login-id').focus();
+    }
+
+    async function doAdminLogin() {
+      const id = document.getElementById('admin-login-id').value.trim();
+      const pw = document.getElementById('admin-login-pw').value.trim();
+      if (!id || !pw) return showToast('아이디와 비밀번호를 입력해주세요.');
+      if (id !== ADMIN_PHONE || pw !== ADMIN_PIN) return showToast('관리자 정보가 올바르지 않습니다.');
+      currentUser = { name: '관리자', phone: ADMIN_PHONE, is_admin: true };
+      isAdmin = true;
+      localStorage.setItem('rsv_user', JSON.stringify(currentUser));
+      enterApp();
     }
 
     async function doLogin() {
@@ -947,7 +988,10 @@
       if (!data || error) return showToast('전화번호 또는 비밀번호가 올바르지 않습니다.');
 
       currentUser = data; isAdmin = !!data.is_admin;
-      localStorage.setItem('rsv_user', JSON.stringify(currentUser));
+      const autoLogin = document.getElementById('auto-login-chk');
+      if (!autoLogin || autoLogin.checked) {
+        localStorage.setItem('rsv_user', JSON.stringify(currentUser));
+      }
       enterApp();
     }
 
@@ -973,6 +1017,7 @@
       }
 
       currentUser = data; isAdmin = false;
+      // 회원가입은 항상 자동 로그인 저장 (편의성)
       localStorage.setItem('rsv_user', JSON.stringify(currentUser));
       enterApp();
     }
