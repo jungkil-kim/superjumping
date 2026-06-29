@@ -156,6 +156,7 @@
       outline: none;
       transition: border-color 0.2s, background 0.2s;
       -webkit-appearance: none;
+      appearance: none;
     }
 
     .form-group input:focus {
@@ -864,25 +865,31 @@
     // 초기화
     // =====================================================
     async function init() {
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      try {
+        if (!window.supabase) throw new Error('Supabase 라이브러리 로드 실패');
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      // 자동 로그인 확인
-      const saved = localStorage.getItem('rsv_user');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.is_admin) {
-            currentUser = parsed; isAdmin = true;
-            return enterApp();
-          }
-          // DB에서 유저 확인
-          const { data } = await db.from('users').select('*').eq('id', parsed.id).single();
-          if (data) {
-            currentUser = data; isAdmin = !!data.is_admin;
-            return enterApp();
-          }
-        } catch (e) { }
-        localStorage.removeItem('rsv_user');
+        // 자동 로그인 확인
+        const saved = localStorage.getItem('rsv_user');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.is_admin) {
+              currentUser = parsed; isAdmin = true;
+              return enterApp();
+            }
+            // DB에서 유저 확인
+            const { data } = await db.from('users').select('*').eq('id', parsed.id).single();
+            if (data) {
+              currentUser = data; isAdmin = !!data.is_admin;
+              return enterApp();
+            }
+          } catch (e) { }
+          localStorage.removeItem('rsv_user');
+        }
+      } catch (e) {
+        console.error('초기화 오류:', e);
+        // 오류가 있어도 로그인 화면은 항상 표시
       }
       showAuth();
     }
@@ -1233,4 +1240,254 @@
     // =====================================================
     async function doReserve(classType, dateStr, timeSlot) {
       showLoading(true);
-      const { error } = await db.from('reservations').insert([{ 
+      const { error } = await db.from('reservations').insert([{
+        user_id: currentUser.id, class_type: classType,
+        date: dateStr, time_slot: timeSlot, status: 'confirmed'
+      }]);
+      showLoading(false);
+
+      if (error) {
+        if (error.code === '23505') return showToast('이미 해당 시간에 예약이 있습니다.');
+        return showToast('예약에 실패했습니다. 다시 시도해주세요.');
+      }
+      showToast('✅ 예약이 완료되었습니다!');
+      await loadSlots();
+    }
+
+    async function doWaitlist(classType, dateStr, timeSlot, position) {
+      showLoading(true);
+      const { error } = await db.from('reservations').insert([{
+        user_id: currentUser.id, class_type: classType,
+        date: dateStr, time_slot: timeSlot,
+        status: 'waitlist', waitlist_position: position
+      }]);
+      showLoading(false);
+
+      if (error) {
+        if (error.code === '23505') return showToast('이미 해당 시간에 예약 또는 대기 중입니다.');
+        return showToast('대기 신청에 실패했습니다.');
+      }
+      showToast(`⏳ 예약 대기 ${position}번째로 등록되었습니다.`);
+      await loadSlots();
+    }
+
+    async function cancelRsv(rsvId, classType, dateStr, timeSlot) {
+      if (!confirm('예약을 취소하시겠습니까?')) return;
+      showLoading(true);
+
+      const { data: rsv } = await db.from('reservations').select('*').eq('id', rsvId).single();
+      if (!rsv) { showLoading(false); return showToast('예약 정보를 찾을 수 없습니다.'); }
+
+      await db.from('reservations').update({ status: 'cancelled' }).eq('id', rsvId);
+
+      if (rsv.status === 'confirmed') {
+        // 대기자 자동 확정
+        const { data: firstWait } = await db.from('reservations')
+          .select('*').eq('class_type', classType).eq('date', dateStr)
+          .eq('time_slot', timeSlot).eq('status', 'waitlist')
+          .order('waitlist_position', { ascending: true }).limit(1);
+
+        if (firstWait && firstWait.length > 0) {
+          await db.from('reservations').update({ status: 'confirmed', waitlist_position: null }).eq('id', firstWait[0].id);
+          // 남은 대기자 순번 재정렬
+          const { data: remain } = await db.from('reservations')
+            .select('id').eq('class_type', classType).eq('date', dateStr)
+            .eq('time_slot', timeSlot).eq('status', 'waitlist')
+            .order('waitlist_position', { ascending: true });
+          if (remain) {
+            for (let i = 0; i < remain.length; i++) {
+              await db.from('reservations').update({ waitlist_position: i + 1 }).eq('id', remain[i].id);
+            }
+          }
+          showToast('예약이 취소되었습니다. 대기자가 자동 확정되었습니다.');
+        } else {
+          showToast('예약이 취소되었습니다.');
+        }
+      } else {
+        // 대기 취소 시 순번 재정렬
+        const { data: remain } = await db.from('reservations')
+          .select('id').eq('class_type', classType).eq('date', dateStr)
+          .eq('time_slot', timeSlot).eq('status', 'waitlist')
+          .order('waitlist_position', { ascending: true });
+        if (remain) {
+          for (let i = 0; i < remain.length; i++) {
+            await db.from('reservations').update({ waitlist_position: i + 1 }).eq('id', remain[i].id);
+          }
+        }
+        showToast('대기 신청이 취소되었습니다.');
+      }
+
+      showLoading(false);
+      await loadSlots();
+      if (activeScreen === 'my') await loadMy();
+    }
+
+    // =====================================================
+    // 내 예약 화면
+    // =====================================================
+    async function loadMy() {
+      if (isAdmin) {
+        document.getElementById('my-content').innerHTML =
+          `<div class="empty-state"><div class="empty-icon">⚙️</div><p class="empty-title">관리자 페이지를 이용해주세요</p></div>`;
+        return;
+      }
+
+      showLoading(true);
+      const today = fmtDate(new Date());
+      const { data } = await db.from('reservations')
+        .select('*').eq('user_id', currentUser.id)
+        .in('status', ['confirmed', 'waitlist'])
+        .gte('date', today)
+        .order('date').order('time_slot');
+      showLoading(false);
+
+      if (!data || data.length === 0) {
+        document.getElementById('my-content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p class="empty-title">예약 내역이 없습니다</p>
+        <p class="empty-sub">수업을 예약해보세요!</p>
+        <button class="btn btn-primary" style="margin-top:20px;width:auto;padding:13px 28px" onclick="navigateTo('reserve')">예약하러 가기</button>
+      </div>`;
+        return;
+      }
+
+      let html = `<p style="font-size:13px;color:var(--text-sub);margin-bottom:12px">예정된 예약 ${data.length}건</p>`;
+      data.forEach(r => {
+        const d = new Date(r.date + 'T00:00:00');
+        const cfg = SCHEDULE[r.class_type];
+        html += `<div class="my-rsv-card">
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <span style="font-size:28px">${cfg.emoji}</span>
+        <div>
+          <div class="my-rsv-class">${cfg.label}</div>
+          <div class="my-rsv-date">${d.getMonth() + 1}/${d.getDate()}(${DAYS_KO[d.getDay()]}) · ${fmtTime(r.time_slot)}</div>
+          ${r.status === 'waitlist' ? `<div style="font-size:12px;font-weight:700;color:var(--warning);margin-top:3px">대기 ${r.waitlist_position}번째</div>` : ''}
+        </div>
+      </div>
+      <div class="my-rsv-right">
+        <span class="tag ${r.status === 'confirmed' ? 'tag-confirmed' : 'tag-waitlist'}">${r.status === 'confirmed' ? '예약완료' : '예약대기'}</span>
+        <button class="btn btn-sm btn-ghost-cancel" onclick="cancelRsvFromMy('${r.id}','${r.class_type}','${r.date}','${r.time_slot}')">취소</button>
+      </div>
+    </div>`;
+      });
+      document.getElementById('my-content').innerHTML = html;
+    }
+
+    async function cancelRsvFromMy(rsvId, classType, dateStr, timeSlot) {
+      await cancelRsv(rsvId, classType, dateStr, timeSlot);
+    }
+
+    // =====================================================
+    // 관리자 화면
+    // =====================================================
+    async function loadAdmin() {
+      if (!isAdmin) return;
+
+      showLoading(true);
+      const { data: members } = await db.from('users').select('*').eq('is_admin', false).order('created_at', { ascending: false });
+      showLoading(false);
+
+      const cnt = (members || []).length;
+      let html = `
+    <div class="card">
+      <p class="section-title">✏️ 회원 등록</p>
+      <div class="form-group"><label>성명</label><input type="text" id="a-name" placeholder="이름 입력"></div>
+      <div class="form-group"><label>전화번호</label><input type="tel" id="a-phone" placeholder="숫자만 입력" inputmode="numeric"></div>
+      <div class="form-group"><label>비밀번호 (숫자 4자리)</label><input type="password" id="a-pin" placeholder="• • • •" maxlength="4" inputmode="numeric"></div>
+      <button class="btn btn-primary" onclick="adminRegister()">회원 등록</button>
+    </div>
+
+    <div class="card">
+      <p class="section-title">👥 회원 목록 (총 ${cnt}명)</p>`;
+
+      if (cnt === 0) {
+        html += `<div class="empty-state" style="padding:20px"><div class="empty-icon">👤</div><p class="empty-sub">등록된 회원이 없습니다</p></div>`;
+      } else {
+        (members || []).forEach(m => {
+          html += `<div class="member-row">
+        <div>
+          <div class="member-name-txt">${escHtml(m.name)}</div>
+          <div class="member-phone-txt">${fmtPhone(m.phone)}</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="adminDelete('${m.id}','${escHtml(m.name)}')">삭제</button>
+      </div>`;
+        });
+      }
+      html += '</div>';
+      document.getElementById('admin-content').innerHTML = html;
+    }
+
+    async function adminRegister() {
+      const name = document.getElementById('a-name').value.trim();
+      const phone = document.getElementById('a-phone').value.trim().replace(/\D/g, '');
+      const pin = document.getElementById('a-pin').value.trim();
+
+      if (!name) return showToast('이름을 입력해주세요.');
+      if (!phone) return showToast('전화번호를 입력해주세요.');
+      if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) return showToast('비밀번호는 숫자 4자리입니다.');
+
+      showLoading(true);
+      const { error } = await db.from('users').insert([{ name, phone, pin, is_admin: false }]);
+      showLoading(false);
+
+      if (error) {
+        if (error.code === '23505') return showToast('이미 등록된 전화번호입니다.');
+        return showToast('등록에 실패했습니다.');
+      }
+      showToast(`✅ ${name}님이 등록되었습니다.`);
+      await loadAdmin();
+    }
+
+    async function adminDelete(id, name) {
+      if (!confirm(`${name}님을 삭제하시겠습니까?\n예약 내역도 모두 삭제됩니다.`)) return;
+      showLoading(true);
+      await db.from('users').delete().eq('id', id);
+      showLoading(false);
+      showToast(`${name}님이 삭제되었습니다.`);
+      await loadAdmin();
+    }
+
+    // =====================================================
+    // 유틸리티
+    // =====================================================
+    function fmtDate(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function fmtTime(t) {
+      const h = parseInt(t.split(':')[0]);
+      return h < 12 ? `오전 ${h}시` : `오후 ${h - 12}시`;
+    }
+
+    function fmtPhone(p) {
+      if (!p || p === 'admin') return p;
+      const c = p.replace(/\D/g, '');
+      if (c.length === 11) return `${c.slice(0, 3)}-${c.slice(3, 7)}-${c.slice(7)}`;
+      if (c.length === 10) return `${c.slice(0, 3)}-${c.slice(3, 6)}-${c.slice(6)}`;
+      return p;
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showLoading(v) { document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
+
+    let _toastTimer;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    }
+
+    // =====================================================
+    // 앱 시작
+    // =====================================================
+    init();
+  </script>
+</body>
+
+</html>
