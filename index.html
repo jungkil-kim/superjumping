@@ -438,6 +438,12 @@
       background: rgba(255, 255, 255, 0.7);
     }
 
+    .date-item.locked {
+      opacity: 0.35;
+      cursor: not-allowed;
+      background: #f5f5f5;
+    }
+
     /* ========== SLOT CARDS ========== */
     .slot-item {
       border: 1.5px solid var(--border);
@@ -1119,35 +1125,52 @@
     async function selectClassType(type) {
       rv.classType = type; rv.selectedDate = null;
       renderReserveTabs(); renderReserveDates();
-      document.getElementById('reserve-slots').innerHTML =
+      if (rv.selectedDate) await loadSlots();
+      else document.getElementById('reserve-slots').innerHTML =
         `<p style="text-align:center;color:var(--text-sub);padding:30px">날짜를 선택해주세요</p>`;
+    }
+
+    // 해당 날짜 예약 가능 여부: 전날 오후 1시부터 예약 가능
+    function isDateBookable(date) {
+      const now = new Date();
+      const openTime = new Date(date);
+      openTime.setDate(openTime.getDate() - 1); // 전날
+      openTime.setHours(13, 0, 0, 0);           // 오후 1시
+      return now >= openTime;
     }
 
     function renderReserveDates() {
       const today = new Date();
       const schedule = SCHEDULE[rv.classType];
       let html = '';
+      let firstBookable = null;
 
       for (let i = 0; i < 14; i++) {
         const d = new Date(today); d.setDate(today.getDate() + i);
         const dow = d.getDay();
         if (!schedule.slots[dow]) continue;
+
+        const bookable = isDateBookable(d);
         const isSelected = rv.selectedDate && fmtDate(d) === fmtDate(rv.selectedDate);
         const isToday = i === 0;
-        html += `<div class="date-item ${isSelected ? 'active' : ''}" onclick="selectDate(${d.getTime()})">
-      <span class="date-day-label">${DAYS_KO[dow]}</span>
-      <span class="date-num">${d.getDate()}</span>
-      ${isToday ? '<div class="date-today-dot"></div>' : '<div style="height:8px"></div>'}
-    </div>`;
+        if (bookable && !firstBookable) firstBookable = d;
+
+        const clickAction = bookable
+          ? `selectDate(${d.getTime()})`
+          : `showToast('전날 오후 1시 이후에 예약 가능합니다.')`;
+
+        html += `<div class="date-item ${isSelected ? 'active' : ''} ${!bookable ? 'locked' : ''}" onclick="${clickAction}">
+          <span class="date-day-label">${DAYS_KO[dow]}</span>
+          <span class="date-num">${d.getDate()}</span>
+          ${!bookable ? '<div style="font-size:9px;margin-top:3px">🔒</div>' : isToday ? '<div class="date-today-dot"></div>' : '<div style="height:8px"></div>'}
+        </div>`;
       }
       document.getElementById('reserve-date-scroll').innerHTML = html;
 
-      // 첫 번째 날짜 자동 선택
-      if (!rv.selectedDate) {
-        for (let i = 0; i < 14; i++) {
-          const d = new Date(today); d.setDate(today.getDate() + i);
-          if (schedule.slots[d.getDay()]) { rv.selectedDate = d; renderReserveDates(); return; }
-        }
+      // 날짜 미선택 시 오늘(또는 첫 번째 예약 가능 날짜) 자동 선택
+      if (!rv.selectedDate && firstBookable) {
+        rv.selectedDate = firstBookable;
+        renderReserveDates();
       }
     }
 
