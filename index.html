@@ -771,15 +771,13 @@
     </div>
 
     <!-- ── 홈 스크린 ── -->
+    <!-- ── 홈+예약 통합 스크린 ── -->
     <div id="screen-home" class="screen active">
-      <div id="home-content"></div>
-    </div>
-
-    <!-- ── 예약하기 스크린 ── -->
-    <div id="screen-reserve" class="screen">
-      <div id="reserve-tabs" class="class-tabs"></div>
-      <div id="reserve-date-scroll" class="date-scroll"></div>
-      <div id="reserve-slots"></div>
+      <div id="home-greeting"></div>
+      <div id="home-my-today"></div>
+      <div id="home-date-scroll" class="date-scroll"></div>
+      <div id="home-jumping-slots"></div>
+      <div id="home-heated-slots"></div>
     </div>
 
     <!-- ── 내 예약 스크린 ── -->
@@ -795,9 +793,6 @@
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
       <button class="nav-btn active" id="nav-home" onclick="navigateTo('home')">
-        <span class="nav-icon">🏠</span><span>홈</span>
-      </button>
-      <button class="nav-btn" id="nav-reserve" onclick="navigateTo('reserve')">
         <span class="nav-icon">📅</span><span>예약</span>
       </button>
       <button class="nav-btn" id="nav-my" onclick="navigateTo('my')">
@@ -1008,257 +1003,178 @@
       if (navEl) navEl.classList.add('active');
 
       if (screen === 'home') await loadHome();
-      if (screen === 'reserve') { rv.selectedDate = null; await loadReserve(); }
       if (screen === 'my') await loadMy();
       if (screen === 'admin') await loadAdmin();
     }
 
     // =====================================================
-    // 홈 화면
+    // 홈+예약 통합 화면
     // =====================================================
-    async function loadHome() {
-      const today = new Date();
-      const dow = today.getDay(); // 0=일, 6=토
-      const dateStr = fmtDate(today);
-      const todayJ = SCHEDULE.jumping.slots[dow] || [];
-      const todayH = SCHEDULE.heated.slots[dow] || [];
-
-      let html = '';
-
-      // 인사말
-      const h = today.getHours();
-      const greeting = h < 12 ? '좋은 아침이에요' : h < 18 ? '좋은 오후예요' : '좋은 저녁이에요';
-      html += `<div style="padding:4px 2px 12px">
-    <p style="font-size:18px;font-weight:800;letter-spacing:-0.5px">${greeting}, ${currentUser.name}님 👋</p>
-    <p style="font-size:13px;color:var(--text-sub);margin-top:4px">${today.getMonth() + 1}월 ${today.getDate()}일 (${DAYS_KO[dow]}요일) 수업 현황</p>
-  </div>`;
-
-      if (todayJ.length === 0 && todayH.length === 0) {
-        html += `<div class="weekend-banner">
-      <div class="icon">🏖️</div>
-      <h3>오늘은 수업이 없어요</h3>
-      <p>주말은 편히 쉬세요!</p>
-    </div>`;
-        document.getElementById('home-content').innerHTML = html;
-        return;
-      }
-
-      showLoading(true);
-      const { data: rsvs } = await db.from('reservations')
-        .select('*').eq('date', dateStr).eq('status', 'confirmed');
-      showLoading(false);
-
-      const countMap = {};
-      (rsvs || []).forEach(r => { const k = r.class_type + '_' + r.time_slot; countMap[k] = (countMap[k] || 0) + 1; });
-      const myMap = {};
-      if (!isAdmin) (rsvs || []).filter(r => r.user_id === currentUser.id).forEach(r => { myMap[r.class_type + '_' + r.time_slot] = r; });
-
-      function renderOverview(classType, times) {
-        const cfg = SCHEDULE[classType];
-        let rows = '';
-        times.forEach(t => {
-          const key = classType + '_' + t;
-          const cnt = countMap[key] || 0;
-          const pct = Math.round((cnt / cfg.max) * 100);
-          const isMine = myMap[key];
-          rows += `<div class="overview-slot ${isMine ? 'my-reserved' : ''}">
-        <div class="overview-time">${fmtTime(t)}</div>
-        <div class="overview-count">${cnt}/${cfg.max}명</div>
-        <div class="overview-bar"><div class="overview-bar-fill ${cnt >= cfg.max ? 'full' : ''}" style="width:${pct}%"></div></div>
-        ${isMine ? '<div style="font-size:11px;font-weight:700;color:var(--primary);margin-top:4px">✓ 예약됨</div>' : ''}
-      </div>`;
-        });
-        return `<div class="card">
-      <p class="section-title">${cfg.emoji} ${cfg.label}</p>
-      <div class="overview-grid">${rows}</div>
-    </div>`;
-      }
-
-      // 오늘 내 예약 요약 (최상단)
-      const myToday = Object.values(myMap);
-      if (!isAdmin && myToday.length > 0) {
-        html += `<div class="card">
-      <p class="section-title">✅ 오늘 내 예약</p>`;
-        myToday.forEach(r => {
-          const cfg = SCHEDULE[r.class_type];
-          html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:22px">${cfg.emoji}</span>
-        <div>
-          <div style="font-weight:700">${cfg.label}</div>
-          <div style="font-size:13px;color:var(--text-sub)">${fmtTime(r.time_slot)}</div>
-        </div>
-        <span class="tag tag-confirmed" style="margin-left:auto">예약완료</span>
-      </div>`;
-        });
-        html += '</div>';
-      }
-
-      html += `<div style="margin-bottom:12px">
-    <button class="btn btn-primary" onclick="navigateTo('reserve')">📅 수업 예약하기</button>
-  </div>`;
-
-      if (todayJ.length) html += renderOverview('jumping', todayJ);
-      if (todayH.length) html += renderOverview('heated', todayH);
-
-      document.getElementById('home-content').innerHTML = html;
-    }
-
-    // =====================================================
-    // 예약 화면
-    // =====================================================
-    async function loadReserve() {
-      renderReserveTabs();
-      renderReserveDates();
-      if (rv.selectedDate) await loadSlots();
-      else document.getElementById('reserve-slots').innerHTML =
-        `<p style="text-align:center;color:var(--text-sub);padding:30px">날짜를 선택해주세요</p>`;
-    }
-
-    function renderReserveTabs() {
-      document.getElementById('reserve-tabs').innerHTML =
-        ['jumping', 'heated'].map(t => {
-          const cfg = SCHEDULE[t];
-          return `<button class="class-tab ${rv.classType === t ? 'active' : ''}" onclick="selectClassType('${t}')">${cfg.emoji} ${cfg.label}</button>`;
-        }).join('');
-    }
-
-    async function selectClassType(type) {
-      rv.classType = type; rv.selectedDate = null;
-      renderReserveTabs(); renderReserveDates();
-      if (rv.selectedDate) await loadSlots();
-      else document.getElementById('reserve-slots').innerHTML =
-        `<p style="text-align:center;color:var(--text-sub);padding:30px">날짜를 선택해주세요</p>`;
-    }
 
     // 해당 날짜 예약 가능 여부: 전날 오후 1시부터 예약 가능
     function isDateBookable(date) {
       const now = new Date();
       const openTime = new Date(date);
-      openTime.setDate(openTime.getDate() - 1); // 전날
-      openTime.setHours(13, 0, 0, 0);           // 오후 1시
+      openTime.setDate(openTime.getDate() - 1);
+      openTime.setHours(13, 0, 0, 0);
       return now >= openTime;
     }
 
-    function renderReserveDates() {
+    async function loadHome() {
       const today = new Date();
-      const schedule = SCHEDULE[rv.classType];
-      let html = '';
-      let firstBookable = null;
+      const h = today.getHours();
 
+      // 인사말
+      const greeting = h < 12 ? '좋은 아침이에요 ☀️' : h < 18 ? '좋은 오후예요 😊' : '좋은 저녁이에요 🌙';
+      document.getElementById('home-greeting').innerHTML = `
+        <div style="padding:4px 2px 12px">
+          <p style="font-size:17px;font-weight:800;letter-spacing:-0.5px">${greeting}, ${currentUser.name}님</p>
+        </div>`;
+
+      // 날짜 선택 초기화: 오늘 또는 첫 번째 예약 가능한 평일
+      if (!rv.selectedDate) {
+        for (let i = 0; i < 14; i++) {
+          const d = new Date(today); d.setDate(today.getDate() + i);
+          const dow = d.getDay();
+          if (dow >= 1 && dow <= 5 && isDateBookable(d)) { rv.selectedDate = d; break; }
+        }
+      }
+
+      renderHomeDates();
+      await loadHomeSlots();
+    }
+
+    function renderHomeDates() {
+      const today = new Date();
+      let html = '';
       for (let i = 0; i < 14; i++) {
         const d = new Date(today); d.setDate(today.getDate() + i);
         const dow = d.getDay();
-        if (!schedule.slots[dow]) continue;
-
+        if (dow === 0 || dow === 6) continue; // 평일만 표시
         const bookable = isDateBookable(d);
         const isSelected = rv.selectedDate && fmtDate(d) === fmtDate(rv.selectedDate);
         const isToday = i === 0;
-        if (bookable && !firstBookable) firstBookable = d;
-
         const clickAction = bookable
-          ? `selectDate(${d.getTime()})`
+          ? `homeSelectDate(${d.getTime()})`
           : `showToast('전날 오후 1시 이후에 예약 가능합니다.')`;
-
         html += `<div class="date-item ${isSelected ? 'active' : ''} ${!bookable ? 'locked' : ''}" onclick="${clickAction}">
           <span class="date-day-label">${DAYS_KO[dow]}</span>
           <span class="date-num">${d.getDate()}</span>
           ${!bookable ? '<div style="font-size:9px;margin-top:3px">🔒</div>' : isToday ? '<div class="date-today-dot"></div>' : '<div style="height:8px"></div>'}
         </div>`;
       }
-      document.getElementById('reserve-date-scroll').innerHTML = html;
-
-      // 날짜 미선택 시 오늘(또는 첫 번째 예약 가능 날짜) 자동 선택
-      if (!rv.selectedDate && firstBookable) {
-        rv.selectedDate = firstBookable;
-        renderReserveDates();
-      }
+      document.getElementById('home-date-scroll').innerHTML = html;
     }
 
-    async function selectDate(ts) {
+    async function homeSelectDate(ts) {
       rv.selectedDate = new Date(ts);
-      renderReserveDates();
-      await loadSlots();
+      renderHomeDates();
+      await loadHomeSlots();
     }
 
-    async function loadSlots() {
-      if (!rv.selectedDate) return;
-      showLoading(true);
+    async function loadHomeSlots() {
+      if (!rv.selectedDate) {
+        document.getElementById('home-jumping-slots').innerHTML = '';
+        document.getElementById('home-heated-slots').innerHTML = '';
+        document.getElementById('home-my-today').innerHTML = '';
+        return;
+      }
 
+      showLoading(true);
       const dateStr = fmtDate(rv.selectedDate);
       const dow = rv.selectedDate.getDay();
-      const cfg = SCHEDULE[rv.classType];
-      const times = cfg.slots[dow] || [];
 
-      // 확정 + 대기 예약 모두 조회
+      // 두 클래스 예약 한 번에 조회
       const { data: rsvs } = await db.from('reservations')
         .select('*, users(name)')
-        .eq('date', dateStr).eq('class_type', rv.classType)
+        .eq('date', dateStr)
         .in('status', ['confirmed', 'waitlist']);
-
       showLoading(false);
 
-      const confirmedCnt = {}, waitlistCnt = {}, myRsvs = {};
+      const confirmedCnt = {}, waitlistCnt = {}, myRsvMap = {};
       (rsvs || []).forEach(r => {
-        if (r.status === 'confirmed') confirmedCnt[r.time_slot] = (confirmedCnt[r.time_slot] || 0) + 1;
-        if (r.status === 'waitlist') waitlistCnt[r.time_slot] = (waitlistCnt[r.time_slot] || 0) + 1;
-        if (!isAdmin && r.user_id === currentUser.id) myRsvs[r.time_slot] = r;
+        const k = r.class_type + '_' + r.time_slot;
+        if (r.status === 'confirmed') confirmedCnt[k] = (confirmedCnt[k] || 0) + 1;
+        if (r.status === 'waitlist')  waitlistCnt[k]  = (waitlistCnt[k]  || 0) + 1;
+        if (!isAdmin && r.user_id === currentUser.id) myRsvMap[k] = r;
       });
 
-      let html = '';
-      times.forEach(time => {
-        const conf = confirmedCnt[time] || 0;
-        const wait = waitlistCnt[time] || 0;
-        const remain = cfg.max - conf;
-        const myRsv = myRsvs[time];
+      // 오늘 날짜일 때 내 예약 요약 표시
+      const isToday = fmtDate(rv.selectedDate) === fmtDate(new Date());
+      const myRsvList = Object.values(myRsvMap);
+      if (!isAdmin && isToday && myRsvList.length > 0) {
+        let myHtml = `<div class="card"><p class="section-title">✅ 오늘 내 예약</p>`;
+        myRsvList.forEach(r => {
+          const cfg = SCHEDULE[r.class_type];
+          myHtml += `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:22px">${cfg.emoji}</span>
+            <div><div style="font-weight:700">${cfg.label}</div><div style="font-size:13px;color:var(--text-sub)">${fmtTime(r.time_slot)}</div></div>
+            <span class="tag ${r.status === 'confirmed' ? 'tag-confirmed' : 'tag-waitlist'}" style="margin-left:auto">${r.status === 'confirmed' ? '예약완료' : '대기 ' + r.waitlist_position + '번'}</span>
+          </div>`;
+        });
+        myHtml += '</div>';
+        document.getElementById('home-my-today').innerHTML = myHtml;
+      } else {
+        document.getElementById('home-my-today').innerHTML = '';
+      }
 
-        let itemClass = '', badgeHtml = '', actionHtml = '';
+      // 클래스별 슬롯 렌더링
+      function renderClassSlots(classType, containerId) {
+        const cfg = SCHEDULE[classType];
+        const times = cfg.slots[dow] || [];
+        if (!times.length) { document.getElementById(containerId).innerHTML = ''; return; }
 
-        if (myRsv) {
-          if (myRsv.status === 'confirmed') {
-            itemClass = 'status-my-confirmed';
-            badgeHtml = `<span class="slot-badge badge-confirmed">✓ 예약완료</span>`;
-            if (!isAdmin) {
-              actionHtml = `<button class="btn btn-sm btn-ghost-cancel" onclick="cancelRsv('${myRsv.id}','${rv.classType}','${dateStr}','${time}')">예약 취소</button>`;
+        let html = `<div class="card"><p class="section-title">${cfg.emoji} ${cfg.label}</p>`;
+        times.forEach(time => {
+          const k = classType + '_' + time;
+          const conf   = confirmedCnt[k] || 0;
+          const wait   = waitlistCnt[k]  || 0;
+          const remain = cfg.max - conf;
+          const myRsv  = myRsvMap[k];
+          let itemClass = '', badgeHtml = '', actionHtml = '';
+
+          if (myRsv) {
+            if (myRsv.status === 'confirmed') {
+              itemClass = 'status-my-confirmed';
+              badgeHtml = `<span class="slot-badge badge-confirmed">✓ 예약완료</span>`;
+              if (!isAdmin) actionHtml = `<button class="btn btn-sm btn-ghost-cancel" onclick="cancelRsv('${myRsv.id}','${classType}','${dateStr}','${time}')">예약 취소</button>`;
+            } else {
+              itemClass = 'status-my-waitlist';
+              badgeHtml = `<span class="slot-badge badge-my-wait">대기 ${myRsv.waitlist_position}번</span>`;
+              if (!isAdmin) actionHtml = `<button class="btn btn-sm btn-ghost-wait" onclick="cancelRsv('${myRsv.id}','${classType}','${dateStr}','${time}')">대기 취소</button>`;
             }
+          } else if (remain > 0) {
+            itemClass = 'status-available';
+            badgeHtml = `<span class="slot-badge badge-available">잔여 ${remain}/${cfg.max}</span>`;
+            if (!isAdmin) actionHtml = `<button class="btn btn-sm btn-primary" onclick="doReserve('${classType}','${dateStr}','${time}')">예약하기</button>`;
           } else {
-            itemClass = 'status-my-waitlist';
-            badgeHtml = `<span class="slot-badge badge-my-wait">대기 ${myRsv.waitlist_position}번</span>`;
-            if (!isAdmin) {
-              actionHtml = `<button class="btn btn-sm btn-ghost-wait" onclick="cancelRsv('${myRsv.id}','${rv.classType}','${dateStr}','${time}')">대기 취소</button>`;
-            }
+            itemClass = 'status-full';
+            badgeHtml = `<span class="slot-badge badge-full">마감</span>`;
+            if (!isAdmin) actionHtml = `<button class="btn btn-sm btn-ghost-wait" onclick="doWaitlist('${classType}','${dateStr}','${time}',${wait + 1})">대기 신청${wait > 0 ? ' (현재 ' + wait + '명)' : ''}</button>`;
           }
-        } else if (remain > 0) {
-          itemClass = 'status-available';
-          badgeHtml = `<span class="slot-badge badge-available">잔여 ${remain}/${cfg.max}</span>`;
-          if (!isAdmin) {
-            actionHtml = `<button class="btn btn-sm btn-primary" onclick="doReserve('${rv.classType}','${dateStr}','${time}')">예약하기</button>`;
-          }
-        } else {
-          itemClass = 'status-full';
-          badgeHtml = `<span class="slot-badge badge-full">마감</span>`;
-          if (!isAdmin) {
-            actionHtml = `<button class="btn btn-sm btn-ghost-wait" onclick="doWaitlist('${rv.classType}','${dateStr}','${time}',${wait + 1})">대기 신청 ${wait > 0 ? '(현재 ' + wait + '명)' : ''}</button>`;
-          }
-        }
 
-        const adminInfo = isAdmin && rsvs
-          ? (rsvs || []).filter(r => r.time_slot === time && r.status === 'confirmed').map(r => r.users?.name || '').join(', ')
-          : '';
+          const adminNames = isAdmin
+            ? (rsvs || []).filter(r => r.class_type === classType && r.time_slot === time && r.status === 'confirmed').map(r => r.users?.name || '').join(', ')
+            : '';
 
-        html += `<div class="slot-item ${itemClass}">
-      <div class="slot-top">
-        <div>
-          <div class="slot-time">${fmtTime(time)}</div>
-          <div class="slot-count">${conf}/${cfg.max}명 확정${wait > 0 ? ' · 대기 ' + wait + '명' : ''}</div>
-          ${adminInfo ? `<div style="font-size:12px;color:var(--text-sub);margin-top:4px">${adminInfo}</div>` : ''}
-        </div>
-        ${badgeHtml}
-      </div>
-      ${actionHtml ? `<div class="slot-actions">${actionHtml}</div>` : ''}
-    </div>`;
-      });
+          html += `<div class="slot-item ${itemClass}">
+            <div class="slot-top">
+              <div>
+                <div class="slot-time">${fmtTime(time)}</div>
+                <div class="slot-count">${conf}/${cfg.max}명 확정${wait > 0 ? ' · 대기 ' + wait + '명' : ''}</div>
+                ${adminNames ? `<div style="font-size:12px;color:var(--text-sub);margin-top:4px">${adminNames}</div>` : ''}
+              </div>
+              ${badgeHtml}
+            </div>
+            ${actionHtml ? `<div class="slot-actions">${actionHtml}</div>` : ''}
+          </div>`;
+        });
+        html += '</div>';
+        document.getElementById(containerId).innerHTML = html;
+      }
 
-      document.getElementById('reserve-slots').innerHTML = html || '<p style="text-align:center;color:var(--text-sub);padding:30px">시간표가 없습니다</p>';
+      renderClassSlots('jumping', 'home-jumping-slots');
+      renderClassSlots('heated',  'home-heated-slots');
     }
 
     // =====================================================
@@ -1288,7 +1204,7 @@
       showLoading(false);
       if (error) return showToast('예약에 실패했습니다: ' + (error.message || ''));
       showToast('✅ 예약이 완료되었습니다!');
-      await loadSlots();
+      await loadHomeSlots();
     }
 
     async function doWaitlist(classType, dateStr, timeSlot, position) {
@@ -1316,7 +1232,7 @@
       showLoading(false);
       if (error) return showToast('대기 신청에 실패했습니다: ' + (error.message || ''));
       showToast(`⏳ 예약 대기 ${position}번째로 등록되었습니다.`);
-      await loadSlots();
+      await loadHomeSlots();
     }
 
     async function cancelRsv(rsvId, classType, dateStr, timeSlot) {
@@ -1366,7 +1282,7 @@
       }
 
       showLoading(false);
-      await loadSlots();
+      await loadHomeSlots();
       if (activeScreen === 'my') await loadMy();
     }
 
