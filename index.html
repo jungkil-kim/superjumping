@@ -983,8 +983,7 @@
     const SUPABASE_URL = 'https://znokmxgfxiqgjbmlnmgn.supabase.co';       // 예: https://abcxyz.supabase.co
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpub2tteGdmeGlxZ2pibWxubWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MDQ3ODgsImV4cCI6MjA5ODI4MDc4OH0.zJgkpd9QHb0uLDv50sxsAyb0jngYafdS2_I7i8v1gK4';  // Supabase 프로젝트 API 키
 
-    const ADMIN_PHONE = 'morsejjang';
-    const ADMIN_PIN   = 'wella1471';
+    // 관리자 계정은 DB(users 테이블 is_admin=true)에서 관리합니다.
 
     // =====================================================
     // 수업 시간표 설정
@@ -1094,9 +1093,13 @@
       const id = document.getElementById('admin-login-id').value.trim();
       const pw = document.getElementById('admin-login-pw').value.trim();
       if (!id || !pw) return showToast('아이디와 비밀번호를 입력해주세요.');
-      if (id !== ADMIN_PHONE || pw !== ADMIN_PIN) return showToast('관리자 정보가 올바르지 않습니다.');
-      currentUser = { name: '관리자', phone: ADMIN_PHONE, is_admin: true };
-      isAdmin = true;
+      showLoading(true);
+      // DB에서 is_admin=true 계정 조회 (phone 필드에 관리자 ID 저장)
+      const { data } = await db.from('users').select('*')
+        .eq('phone', id).eq('pin', pw).eq('is_admin', true).single();
+      showLoading(false);
+      if (!data) return showToast('관리자 정보가 올바르지 않습니다.');
+      currentUser = data; isAdmin = true;
       localStorage.setItem('rsv_user', JSON.stringify(currentUser));
       enterApp();
     }
@@ -1104,24 +1107,21 @@
     async function doLogin() {
       const rawInput = document.getElementById('login-phone').value.trim();
       const pin      = document.getElementById('login-pin').value.trim();
-
       if (!rawInput || !pin) return showToast('아이디(전화번호)와 비밀번호를 입력해주세요.');
 
-      // 관리자 로그인 (숫자 변환 전에 먼저 체크)
-      if (rawInput === ADMIN_PHONE && pin === ADMIN_PIN) {
-        currentUser = { name: '관리자', phone: ADMIN_PHONE, is_admin: true };
-        isAdmin = true;
-        localStorage.setItem('rsv_user', JSON.stringify(currentUser));
-        return enterApp();
-      }
-
-      const phone = rawInput.replace(/\D/g, '');
-
       showLoading(true);
-      const { data, error } = await db.from('users').select('*').eq('phone', phone).eq('pin', pin).single();
+      // 1차: rawInput 그대로 시도 (관리자 ID는 숫자가 아닐 수 있음)
+      let { data } = await db.from('users').select('*').eq('phone', rawInput).eq('pin', pin).single();
+      // 2차: 숫자만 추출해서 재시도 (일반 회원 전화번호)
+      if (!data) {
+        const phone = rawInput.replace(/\D/g, '');
+        if (phone) {
+          ({ data } = await db.from('users').select('*').eq('phone', phone).eq('pin', pin).single());
+        }
+      }
       showLoading(false);
 
-      if (!data || error) return showToast('전화번호 또는 비밀번호가 올바르지 않습니다.');
+      if (!data) return showToast('전화번호 또는 비밀번호가 올바르지 않습니다.');
 
       currentUser = data; isAdmin = !!data.is_admin;
       const autoLogin = document.getElementById('auto-login-chk');
